@@ -92,6 +92,47 @@ const server = createServer(async (req, res) => {
     withAuthCors(req, res);
   }
 
+  if (pathname === '/api/auth/check-domain') {
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    let payload: unknown;
+
+    try {
+      payload = await readJsonBody(req);
+    } catch {
+      sendJson(res, 400, { error: 'Invalid JSON payload' });
+      return;
+    }
+
+    const email =
+      payload && typeof payload === 'object' && typeof (payload as { email?: unknown }).email === 'string'
+        ? (payload as { email: string }).email.trim()
+        : '';
+    const domain = email.split('@')[1]?.toLowerCase() ?? '';
+
+    if (!domain) {
+      sendJson(res, 400, { error: 'Valid email is required' });
+      return;
+    }
+
+    // Mocked for now: every domain proceeds with password auth.
+    sendJson(res, 200, {
+      domain,
+      requiresSso: false,
+      ssoProvider: null,
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/auth')) {
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
