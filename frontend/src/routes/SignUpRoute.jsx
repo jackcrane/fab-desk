@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { authClient } from "../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
 import { Flex } from "../components/flex";
+import { Page } from "../components/page";
 import { DitherMeshGradientFill } from "../components/dither/dither";
 import style from "./SignUpRoute.module.css";
 
@@ -45,64 +46,66 @@ export function SignUpRoute({ navigate }) {
   };
 
   return (
-    <main className={style.main}>
-      <DitherMeshGradientFill />
-      <Card
-        title="Sign Up"
-        footer={
-          <Button type="button" onClick={() => navigate("/sign-in")}>
-            Already have an account?
-          </Button>
-        }
-        footerHeight={40}
-      >
-        <div className={style.form}>
-          <form onSubmit={onSubmit}>
-            <Flex gap={2}>
-              <Input
-                type="text"
-                value={name}
-                autoComplete="name"
-                onChange={(event) => setName(event.target.value)}
-                required
-                placeholder="John Smith"
-                label="Name"
-              />
-              <Input
-                type="email"
-                value={email}
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                placeholder="you@example.com"
-                label="Email"
-              />
-              <Input
-                type="password"
-                value={password}
-                autoComplete="new-password"
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                placeholder="••••••••"
-                label="Password"
-              />
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                variant="primary"
-                loading={isSubmitting}
-              >
-                {isSubmitting ? "Signing up..." : "Sign up"}
-              </Button>
-              {error ? (
-                <Hatch variant="danger" footerHeight={12}>
-                  {error}
-                </Hatch>
-              ) : null}
-            </Flex>
-          </form>
-        </div>
-      </Card>
-    </main>
+    <Page title="Sign Up">
+      <main className={style.main}>
+        <DitherMeshGradientFill />
+        <Card
+          title="Sign Up"
+          footer={
+            <Button type="button" onClick={() => navigate("/sign-in")}>
+              Already have an account?
+            </Button>
+          }
+          footerHeight={40}
+        >
+          <div className={style.form}>
+            <form onSubmit={onSubmit}>
+              <Flex gap={2}>
+                <Input
+                  type="text"
+                  value={name}
+                  autoComplete="name"
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                  placeholder="John Smith"
+                  label="Name"
+                />
+                <Input
+                  type="email"
+                  value={email}
+                  autoComplete="email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  label="Email"
+                />
+                <Input
+                  type="password"
+                  value={password}
+                  autoComplete="new-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  placeholder="••••••••"
+                  label="Password"
+                />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  variant="primary"
+                  loading={isSubmitting}
+                >
+                  {isSubmitting ? "Signing up..." : "Sign up"}
+                </Button>
+                {error ? (
+                  <Hatch variant="danger" footerHeight={12}>
+                    {error}
+                  </Hatch>
+                ) : null}
+              </Flex>
+            </form>
+          </div>
+        </Card>
+      </main>
+    </Page>
   );
 }

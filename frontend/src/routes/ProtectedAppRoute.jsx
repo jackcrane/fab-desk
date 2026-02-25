@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { authClient } from '../auth-client';
+import { Page } from "../components/page";
 
 export function ProtectedAppRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
@@ -13,10 +14,12 @@ export function ProtectedAppRoute({ navigate }) {
 
   if (isPending) {
     return (
-      <main>
-        <h1>Hello world</h1>
-        <p>Checking auth...</p>
-      </main>
+      <Page title="App">
+        <main>
+          <h1>Hello world</h1>
+          <p>Checking auth...</p>
+        </main>
+      </Page>
     );
   }
 
@@ -32,13 +35,15 @@ export function ProtectedAppRoute({ navigate }) {
   };
 
   return (
-    <main>
-      <h1>Hello world</h1>
-      <p>Protected route: /app</p>
-      <p>Signed in as {session.user.email}</p>
-      <button type="button" onClick={onSignOut} disabled={isSigningOut}>
-        {isSigningOut ? 'Signing out...' : 'Sign out'}
-      </button>
-    </main>
+    <Page title="App">
+      <main>
+        <h1>Hello world</h1>
+        <p>Protected route: /app</p>
+        <p>Signed in as {session.user.email}</p>
+        <button type="button" onClick={onSignOut} disabled={isSigningOut}>
+          {isSigningOut ? 'Signing out...' : 'Sign out'}
+        </button>
+      </main>
+    </Page>
   );
 }

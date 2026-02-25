@@ -3,10 +3,11 @@ import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
 import { Dropdown } from "@jackcrane/ui";
+import { DitherMeshGradientFill } from "../dither/dither";
 
 const APP_NAME = "FabDesk";
 
-export function Page({ title, children }) {
+export function Page({ title, children, noDither = false }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
