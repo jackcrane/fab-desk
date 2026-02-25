@@ -13,8 +13,8 @@ export function HomeRoute({ navigate }) {
         {!isPending && session ? (
           <>
             <p>Signed in as {session.user.email}</p>
-            <button type="button" onClick={() => navigate('/app')}>
-              Go to /app
+            <button type="button" onClick={() => navigate('/select-shop')}>
+              Continue to shop selection
             </button>
           </>
         ) : null}

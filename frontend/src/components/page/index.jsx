@@ -3,7 +3,7 @@ import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
 import { Dropdown, Hatch } from "@jackcrane/ui";
-import { DitherMeshGradientFill } from "../dither/dither";
+import { clearActiveShopId } from "../../lib/active-shop";
 
 const APP_NAME = "FabDesk";
 
@@ -18,6 +18,7 @@ export function Page({ title, children, noDither = false }) {
   const onSignOut = async () => {
     setIsSigningOut(true);
     try {
+      clearActiveShopId();
       await authClient.signOut();
     } finally {
       setIsSigningOut(false);
@@ -34,6 +35,7 @@ export function Page({ title, children, noDither = false }) {
           <Dropdown
             items={[
               { label: "Profile", href: "/app/profile" },
+              { label: "Switch Shop", href: "/select-shop" },
               { label: "Sign out", onClick: onSignOut },
             ]}
             triggerLabel={session.user.name ?? session.user.email}

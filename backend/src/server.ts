@@ -6,6 +6,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { prisma } from './db';
 import { router } from './router';
+import { createShopForUser, createShopInputSchema, listShopsForUser } from './shops';
 
 const frontendOrigin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
 
@@ -39,12 +40,51 @@ async function getSession(req: IncomingMessage) {
   });
 }
 
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Uint8Array[] = [];
+
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+
+  if (chunks.length === 0) {
+    return {};
+  }
+
+  const raw = Buffer.concat(chunks).toString('utf8').trim();
+
+  if (!raw) {
+    return {};
+  }
+
+  return JSON.parse(raw);
+}
+
+function sendJson(res: ServerResponse, statusCode: number, payload: unknown): void {
+  res.writeHead(statusCode, {
+    'content-type': 'application/json',
+  });
+  res.end(JSON.stringify(payload));
+}
+
+function getSessionUserId(session: unknown): string | null {
+  if (!session || typeof session !== 'object') {
+    return null;
+  }
+
+  const maybeUser = (session as { user?: { id?: unknown } }).user;
+  return typeof maybeUser?.id === 'string' ? maybeUser.id : null;
+}
+
 const server = createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+  const pathname = requestUrl.pathname;
+
   if (req.headers.origin === frontendOrigin) {
     withAuthCors(req, res);
   }
 
-  if (req.url?.startsWith('/api/auth')) {
+  if (pathname.startsWith('/api/auth')) {
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
       res.end();
@@ -55,13 +95,69 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.url?.startsWith('/rpc') && req.method === 'OPTIONS') {
+  if (pathname === '/api/shops' && req.method === 'OPTIONS') {
     res.statusCode = 204;
     res.end();
     return;
   }
 
-  if (req.url === '/health') {
+  if (pathname === '/api/shops') {
+    const session = await getSession(req);
+    const userId = getSessionUserId(session);
+
+    if (!userId) {
+      sendJson(res, 401, { error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      if (req.method === 'GET') {
+        const shops = await listShopsForUser(userId);
+        sendJson(res, 200, { shops });
+        return;
+      }
+
+      if (req.method === 'POST') {
+        let payload: unknown;
+
+        try {
+          payload = await readJsonBody(req);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON payload' });
+          return;
+        }
+
+        const parsedPayload = createShopInputSchema.safeParse(payload);
+
+        if (!parsedPayload.success) {
+          sendJson(res, 400, {
+            error: 'Invalid shop payload',
+            issues: parsedPayload.error.issues,
+          });
+          return;
+        }
+
+        const shop = await createShopForUser(userId, parsedPayload.data);
+        sendJson(res, 201, { shop });
+        return;
+      }
+    } catch (error) {
+      console.error('Shop API error:', error);
+      sendJson(res, 500, { error: 'Internal server error' });
+      return;
+    }
+
+    sendJson(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
+  if (pathname.startsWith('/rpc') && req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  if (pathname === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
     return;

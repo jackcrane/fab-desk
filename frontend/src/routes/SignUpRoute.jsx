@@ -16,7 +16,7 @@ export function SignUpRoute({ navigate }) {
 
   useEffect(() => {
     if (!isPending && session) {
-      navigate("/app", true);
+      navigate("/select-shop", true);
     }
   }, [isPending, navigate, session]);
 
@@ -42,7 +42,7 @@ export function SignUpRoute({ navigate }) {
       return;
     }
 
-    navigate("/app", true);
+    navigate("/select-shop", true);
   };
 
   return (
