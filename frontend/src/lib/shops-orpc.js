@@ -6,9 +6,8 @@ import { orpc } from "../orpc";
 const listShopsKey = orpc.shop.list.key();
 
 function revalidateShopQueries() {
-  return mutate(orpc.shop.list.matcher(), undefined, {
-    revalidate: true,
-  });
+  // Revalidate in place so existing data stays mounted while fetching.
+  return mutate(orpc.shop.list.matcher());
 }
 
 export function useShopsQuery(options) {

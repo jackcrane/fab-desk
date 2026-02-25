@@ -22,9 +22,14 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     useUpdateShopBasicSettingsMutation();
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState("");
+  const [hydratedShopId, setHydratedShopId] = useState(null);
 
   useEffect(() => {
     if (!activeShop) {
+      return;
+    }
+
+    if (hydratedShopId === activeShop.id) {
       return;
     }
 
@@ -40,7 +45,8 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     setPrimaryContactEmail(nextValues.primaryContactEmail);
     setSaveError("");
     setSaveSuccess("");
-  }, [activeShop]);
+    setHydratedShopId(activeShop.id);
+  }, [activeShop, hydratedShopId]);
 
   const normalizedValues = useMemo(
     () => ({
@@ -60,8 +66,7 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     normalizedValues.name.length === 0 ||
     normalizedValues.organization.length === 0;
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
+  const onSubmit = async () => {
     setSaveError("");
     setSaveSuccess("");
 
@@ -128,7 +133,6 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     <Page
       title="Basic Settings"
       shopId={activeShop.id}
-      loading={isLoading}
       sidenavItems={sidenavItems({
         activePage: "settings",
         shopId: activeShop.id,
@@ -157,7 +161,15 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
         <p style={{ marginBottom: 16 }}>
           Configure your shop's basic branding settings.
         </p>
-        <form onSubmit={onSubmit}>
+        <form
+          onSubmitCapture={(event) => {
+            event.preventDefault();
+          }}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onSubmit();
+          }}
+        >
           <Flex gap={2}>
             <Input
               label="Shop Name"

@@ -1,81 +1,90 @@
-import { usePathname } from "./hooks/usePathname";
+import { useCallback } from "react";
+import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { HomeRoute } from "./routes/HomeRoute";
 import { SignInRoute } from "./routes/SignInRoute/index";
-import { SignUpRoute } from "./routes/SignUpRoute";
+import { SignUpRoute } from "./routes/SignUpRoute/index";
 import { ShopHomeRoute } from "./routes/ShopHomeRoute";
 import { ShopKbRoute } from "./routes/ShopKbRoute";
 import { ShopSettingsRoute } from "./routes/ShopSettingsRoute";
 import { ShopBasicSettingsRoute } from "./routes/ShopBasicSettingsRoute";
-import { NotFoundRoute } from "./routes/NotFoundRoute";
-import { ShopSelectRoute } from "./routes/ShopSelectRoute";
+import { NotFoundRoute } from "./routes/NotFoundRoute/index";
+import { ShopSelectRoute } from "./routes/ShopSelectRoute/index";
 
-function parseShopRoute(pathname) {
-  const normalizedPath =
-    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+function useLegacyNavigate() {
+  const navigate = useNavigate();
 
-  const basicSettingsMatch = normalizedPath.match(
-    /^\/shop\/([^/]+)\/settings\/basic$/,
+  return useCallback(
+    (to, replace = false) => {
+      navigate(to, { replace });
+    },
+    [navigate],
   );
-  if (basicSettingsMatch) {
-    return {
-      shopId: decodeURIComponent(basicSettingsMatch[1]),
-      page: "settings-basic",
-    };
-  }
+}
 
-  const kbMatch = normalizedPath.match(/^\/shop\/([^/]+)\/kb$/);
-  if (kbMatch) {
-    return {
-      shopId: decodeURIComponent(kbMatch[1]),
-      page: "kb",
-    };
-  }
+function HomeRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <HomeRoute navigate={navigate} />;
+}
 
-  const settingsMatch = normalizedPath.match(/^\/shop\/([^/]+)\/settings$/);
-  if (settingsMatch) {
-    return {
-      shopId: decodeURIComponent(settingsMatch[1]),
-      page: "settings",
-    };
-  }
+function SignInRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <SignInRoute navigate={navigate} />;
+}
 
-  const homeMatch = normalizedPath.match(/^\/shop\/([^/]+)$/);
-  if (homeMatch) {
-    return {
-      shopId: decodeURIComponent(homeMatch[1]),
-      page: "home",
-    };
-  }
+function SignUpRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <SignUpRoute navigate={navigate} />;
+}
 
-  return null;
+function ShopSelectRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <ShopSelectRoute navigate={navigate} />;
+}
+
+function ShopHomeRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopHomeRoute navigate={navigate} shopId={shopId} />;
+}
+
+function ShopKbRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopKbRoute navigate={navigate} shopId={shopId} />;
+}
+
+function ShopSettingsRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopSettingsRoute navigate={navigate} shopId={shopId} />;
+}
+
+function ShopBasicSettingsRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopBasicSettingsRoute navigate={navigate} shopId={shopId} />;
+}
+
+function NotFoundRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <NotFoundRoute navigate={navigate} />;
 }
 
 export default function App() {
-  const { pathname, navigate } = usePathname();
-
-  if (pathname === "/") return <HomeRoute navigate={navigate} />;
-  if (pathname === "/sign-in") return <SignInRoute navigate={navigate} />;
-  if (pathname === "/sign-up") return <SignUpRoute navigate={navigate} />;
-  if (pathname === "/shop") return <ShopSelectRoute navigate={navigate} />;
-
-  const shopRoute = parseShopRoute(pathname);
-  if (shopRoute?.page === "home") {
-    return <ShopHomeRoute navigate={navigate} shopId={shopRoute.shopId} />;
-  }
-
-  if (shopRoute?.page === "kb") {
-    return <ShopKbRoute navigate={navigate} shopId={shopRoute.shopId} />;
-  }
-
-  if (shopRoute?.page === "settings") {
-    return <ShopSettingsRoute navigate={navigate} shopId={shopRoute.shopId} />;
-  }
-
-  if (shopRoute?.page === "settings-basic") {
-    return (
-      <ShopBasicSettingsRoute navigate={navigate} shopId={shopRoute.shopId} />
-    );
-  }
-
-  return <NotFoundRoute navigate={navigate} />;
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRoutePage />} />
+      <Route path="/sign-in" element={<SignInRoutePage />} />
+      <Route path="/sign-up" element={<SignUpRoutePage />} />
+      <Route path="/shop" element={<ShopSelectRoutePage />} />
+      <Route path="/shop/:shopId" element={<ShopHomeRoutePage />} />
+      <Route path="/shop/:shopId/kb" element={<ShopKbRoutePage />} />
+      <Route path="/shop/:shopId/settings" element={<ShopSettingsRoutePage />} />
+      <Route
+        path="/shop/:shopId/settings/basic"
+        element={<ShopBasicSettingsRoutePage />}
+      />
+      <Route path="*" element={<NotFoundRoutePage />} />
+    </Routes>
+  );
 }

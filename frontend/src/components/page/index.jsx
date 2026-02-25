@@ -5,6 +5,7 @@ import { authClient } from "../../auth-client";
 import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 import classNames from "classnames";
+import { Link, useNavigate } from "react-router-dom";
 import {
   IconBook,
   IconHome,
@@ -35,6 +36,7 @@ export function Page({
 }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = title ? `${title} | ${APP_NAME}` : APP_NAME;
@@ -67,8 +69,8 @@ export function Page({
         {session ? (
           <Dropdown
             items={[
-              { label: "Profile", href: shopHomePath(shopId) },
-              { label: "Switch Shop", href: "/shop" },
+              { label: "Profile", onClick: () => navigate(shopHomePath(shopId)) },
+              { label: "Switch Shop", onClick: () => navigate("/shop") },
               { label: "Sign out", onClick: onSignOut },
             ]}
             triggerLabel={session.user.name ?? session.user.email}
@@ -78,18 +80,19 @@ export function Page({
       {sidenavItems ? (
         <div className={styles.contentWrap}>
           <div className={styles.sidenav}>
-            {sidenavItems.map((item) =>
+            {sidenavItems.map((item, index) =>
               item.type === "grow" ? (
                 <div
+                  key={`grow-${index}`}
                   style={{
                     flex: 1,
                     borderBottom: "1px solid var(--border-color)",
                   }}
                 />
               ) : (
-                <a
+                <Link
                   key={item.path}
-                  href={item.path}
+                  to={item.path}
                   className={
                     item.active ? classNames(styles.active, "jcui_hatch") : null
                   }
@@ -101,7 +104,7 @@ export function Page({
                 >
                   {item.icon}
                   <div className={classNames(styles.label)}>{item.label}</div>
-                </a>
+                </Link>
               ),
             )}
           </div>
@@ -158,12 +161,12 @@ const Breadcrumbs = ({ breadcrumbs }) => {
     <div className={styles.breadcrumbs}>
       {breadcrumbs.map((breadcrumb, index) => (
         <div key={index}>
-          <a
-            href={breadcrumb.href}
+          <Link
+            to={breadcrumb.href}
             className={index === breadcrumbs.length - 1 ? styles.active : null}
           >
             {breadcrumb.label}
-          </a>
+          </Link>
 
           {index < breadcrumbs.length - 1 ? (
             <span className={styles.separator}>/</span>

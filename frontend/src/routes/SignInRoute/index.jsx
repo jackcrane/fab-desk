@@ -23,8 +23,7 @@ export function SignInRoute({ navigate }) {
     return null;
   }
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
+  const onSubmit = async () => {
     setError("");
     setIsSubmitting(true);
 
@@ -58,7 +57,15 @@ export function SignInRoute({ navigate }) {
             footerHeight={40}
           >
             <div className={style.form}>
-              <form onSubmit={onSubmit}>
+              <form
+                onSubmitCapture={(event) => {
+                  event.preventDefault();
+                }}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void onSubmit();
+                }}
+              >
                 <Flex gap={2}>
                   <Input
                     type="email"

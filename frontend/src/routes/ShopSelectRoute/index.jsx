@@ -35,8 +35,7 @@ export function ShopSelectRoute({ navigate }) {
     }
   }, [isPending, navigate, session]);
 
-  const onCreateShop = async (event) => {
-    event.preventDefault();
+  const onCreateShop = async () => {
     setCreateError("");
 
     const normalizedName = shopName.trim();
@@ -68,7 +67,16 @@ export function ShopSelectRoute({ navigate }) {
   const { Modal, setOpen } = useModal({
     title: "Create a new shop",
     content: (
-      <form onSubmit={onCreateShop} className={style.modalForm}>
+      <form
+        className={style.modalForm}
+        onSubmitCapture={(event) => {
+          event.preventDefault();
+        }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onCreateShop();
+        }}
+      >
         <Flex gap={2}>
           <Input
             type="text"
