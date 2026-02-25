@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useLayoutEffect, useMemo, useRef } from "react";
 
 export const DitherMeshGradient = ({
   colorA = "#f1f3f4",
@@ -161,7 +161,7 @@ export const DitherMeshGradient = ({
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -201,6 +201,10 @@ export const DitherMeshGradient = ({
       const imageData = ctx.createImageData(iw, ih);
       st.imageData = imageData;
       st.buf = imageData.data;
+
+      // Paint fallback immediately so the canvas never shows default black.
+      ctx.fillStyle = colorA;
+      ctx.fillRect(0, 0, iw, ih);
     };
 
     const ro = new ResizeObserver(resize);
@@ -227,6 +231,7 @@ export const DitherMeshGradient = ({
         width: "100%",
         height: "100%",
         overflow: "hidden",
+        backgroundColor: colorA,
         ...style,
       }}
     >
@@ -236,6 +241,7 @@ export const DitherMeshGradient = ({
           width: "100%",
           height: "100%",
           display: "block",
+          backgroundColor: colorA,
           imageRendering: "pixelated",
           transform: "translateZ(0)",
         }}
