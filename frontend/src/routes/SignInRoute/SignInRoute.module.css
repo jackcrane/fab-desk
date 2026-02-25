@@ -1,0 +1,10 @@
+.main {
+  max-width: 500px;
+  margin: 0 auto;
+  margin-top: 54px;
+}
+
+.form {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}

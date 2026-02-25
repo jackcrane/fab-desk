@@ -10,10 +10,10 @@
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "prisma:generate": "npm run prisma:generate --workspace backend",
-    "prisma:migrate": "npm run prisma:migrate --workspace backend"
+    "prisma:migrate": "npm run prisma:migrate --workspace backend",
+    "deps": "npm install --workspaces"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
   }
 }
-
