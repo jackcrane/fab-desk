@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, Hatch } from "@jackcrane/ui";
+import { Button, Card, Hatch, useModal } from "@jackcrane/ui";
 import { authClient } from "../auth-client";
 import { Page } from "../components/page";
 import { DitherMeshGradientFill } from "../components/dither/dither";
@@ -49,6 +49,12 @@ export function ShopSelectRoute({ navigate }) {
     loadShops();
   }, [isPending, loadShops, session]);
 
+  const { Modal, setOpen } = useModal({
+    title: "Create a new shop",
+    content: <p>This is the modal content</p>,
+    footer: <Button variant="primary">Create shop</Button>,
+  });
+
   if (isPending || (!session && !isPending)) {
     return null;
   }
@@ -61,13 +67,19 @@ export function ShopSelectRoute({ navigate }) {
   return (
     <Page title="Select Shop">
       <DitherMeshGradientFill />
+      <Modal />
       <main className={style.main}>
         <div className={style.dither}></div>
         <div className={style.cardWrap}>
           <Card
             title="Select Shop"
             footer={
-              <Button type="button" onClick={() => {}}>
+              <Button
+                type="button"
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
                 Create a new shop
               </Button>
             }
