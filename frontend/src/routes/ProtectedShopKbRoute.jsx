@@ -25,6 +25,20 @@ export function ProtectedShopKbRoute({ navigate, shopId }) {
         activePage: "kb",
         shopId: activeShop.id,
       })}
+      breadcrumbs={[
+        {
+          label: "Shops",
+          href: "/shop",
+        },
+        {
+          label: activeShop.name,
+          href: "/shop/" + activeShop.id,
+        },
+        {
+          label: "Knowledge Base",
+          href: "/shop/" + activeShop.id + "/kb",
+        },
+      ]}
     >
       <main>
         <h1>Knowledge Base</h1>
