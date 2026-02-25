@@ -3,6 +3,9 @@ import { authClient } from "../../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
 import style from "./SignInRoute.module.css";
 import { Flex } from "../../components/flex";
+import DitherMeshGradient, {
+  DitherMeshGradientFill,
+} from "../../components/dither/dither";
 
 export function SignInRoute({ navigate }) {
   const [email, setEmail] = useState("");
@@ -32,6 +35,7 @@ export function SignInRoute({ navigate }) {
 
   return (
     <main className={style.main}>
+      <DitherMeshGradientFill />
       <Card
         title="Sign In"
         footer={

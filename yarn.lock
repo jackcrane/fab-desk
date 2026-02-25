@@ -270,10 +270,10 @@
   resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.9.tgz"
   integrity sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==
 
-"@jackcrane/ui@^0.1.7":
-  version "0.1.7"
-  resolved "https://registry.npmjs.org/@jackcrane/ui/-/ui-0.1.7.tgz"
-  integrity sha512-KH+CDxpawCdJOWfE+WaBMXCXnbM8qoP/tlmhyfiI90P6foB88QOqUohNh/IUnuawGZV5HW1nxvFx1p6VHnRtGg==
+"@jackcrane/ui@^0.1.8":
+  version "0.1.8"
+  resolved "https://registry.npmjs.org/@jackcrane/ui/-/ui-0.1.8.tgz"
+  integrity sha512-Zn/zHzlwPxJxc0QBWJaXCfHVqI5TG0YTgFQdcDJcAwWjiX3s2KRsc71M44/5EXAweuwEz1Gvjfh4V4hQD+VMsw==
   dependencies:
     "@observablehq/plot" "^0.6.17"
     "@radix-ui/react-checkbox" "^1.3.3"
@@ -1940,7 +1940,7 @@ foreground-child@3.3.1:
   version "0.0.0"
   resolved "file:frontend"
   dependencies:
-    "@jackcrane/ui" "^0.1.5"
+    "@jackcrane/ui" "^0.1.7"
     "@orpc/client" "^1.8.7"
     "@orpc/experimental-react-swr" "^1.8.5"
     better-auth "^1.3.12"
