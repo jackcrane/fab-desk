@@ -80,10 +80,12 @@ export function ProtectedAppRoute({ navigate }) {
   const isLoading = isPending || isCheckingShop;
   const hasActiveShop = Boolean(activeShop);
 
+  if (!hasActiveShop) return null;
+
   return (
     <Page
       title="App"
-      loading={isLoading}
+      loading={isLoading && hasActiveShop}
       sidenavItems={
         hasActiveShop
           ? [
