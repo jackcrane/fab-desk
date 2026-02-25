@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../auth-client";
-import { Page } from "../components/page";
+import { Page, sidenavItems } from "../components/page";
 import { clearActiveShopId, getActiveShopId } from "../lib/active-shop";
 import { listShops } from "../lib/shop-api";
 
@@ -86,16 +86,9 @@ export function ProtectedAppRoute({ navigate }) {
     <Page
       title="App"
       loading={isLoading && hasActiveShop}
-      sidenavItems={
-        hasActiveShop
-          ? [
-              {
-                path: "",
-                label: "Home",
-              },
-            ]
-          : undefined
-      }
+      sidenavItems={sidenavItems({
+        activePage: "home",
+      })}
     >
       <main>
         <h1>Hello world</h1>

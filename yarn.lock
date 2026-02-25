@@ -1507,6 +1507,13 @@
   dependencies:
     "@tabler/icons" ""
 
+"@tabler/icons-react@^3.37.1":
+  version "3.37.1"
+  resolved "https://registry.npmjs.org/@tabler/icons-react/-/icons-react-3.37.1.tgz#f8da613ede004580d27bb6eb1eeddb8b30950241"
+  integrity sha512-R7UE71Jji7i4Su56Y9zU1uYEBakUejuDJvyuYVmBuUoqp/x3Pn4cv2huarexR3P0GJ2eHg4rUj9l5zccqS6K/Q==
+  dependencies:
+    "@tabler/icons" ""
+
 "@tabler/icons@":
   version "3.37.1"
   resolved "https://registry.npmjs.org/@tabler/icons/-/icons-3.37.1.tgz"

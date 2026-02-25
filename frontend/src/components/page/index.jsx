@@ -4,15 +4,12 @@ import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
 import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
+import classNames from "classnames";
+import { IconBook, IconHome } from "@tabler/icons-react";
 
 const APP_NAME = "FabDesk";
 
-export function Page({
-  title,
-  children,
-  sidenavItems,
-  loading = false,
-}) {
+export function Page({ title, children, sidenavItems, loading = false }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -59,8 +56,15 @@ export function Page({
         <div className={styles.contentWrap}>
           <div className={styles.sidenav}>
             {sidenavItems.map((item) => (
-              <a key={item.path} href={item.path}>
-                {item.label}
+              <a
+                key={item.path}
+                href={item.path}
+                className={
+                  item.active ? classNames(styles.active, "jcui_hatch") : null
+                }
+              >
+                {item.icon}
+                <div className={classNames(styles.label)}>{item.label}</div>
               </a>
             ))}
           </div>
@@ -85,3 +89,20 @@ export function Page({
     </div>
   );
 }
+
+export const sidenavItems = ({ activePage }) => {
+  return [
+    {
+      path: "/app",
+      label: "Home",
+      active: activePage === "home",
+      icon: <IconHome size={32} />,
+    },
+    {
+      path: "/kb",
+      label: "Knowledge Base",
+      active: activePage === "kb",
+      icon: <IconBook size={32} />,
+    },
+  ];
+};

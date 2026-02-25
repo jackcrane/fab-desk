@@ -37,7 +37,6 @@
 }
 
 .sidenav {
-  width: 160px;
   background-color: var(--background-color);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -46,13 +45,45 @@
 
 .sidenav a {
   display: block;
-  padding: 8px 16px;
+  padding: 6px;
   text-decoration: none;
   color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  background-color: var(--body-bg);
+  z-index: 1001;
 }
 
 .sidenav a:hover {
   background-color: var(--secondary-color-100);
+}
+
+.sidenav a.active:hover {
+  background-color: unset;
+}
+
+.sidenav a:hover .label {
+  transform: translateX(44px);
+  opacity: 1;
+}
+
+.label {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  bottom: 4px;
+  background: var(--body-bg);
+  /* no word wrap */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(24px);
+  border: 1px solid var(--border-color);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  opacity: 0;
 }
 
 .content {
