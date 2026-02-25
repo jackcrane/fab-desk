@@ -54,7 +54,7 @@ export function SignUpRoute({ navigate }) {
                 autoComplete="name"
                 onChange={(event) => setName(event.target.value)}
                 required
-                placeholder="Alex Rivera"
+                placeholder="John Smith"
                 label="Name"
               />
               <Input
