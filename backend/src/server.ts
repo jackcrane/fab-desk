@@ -6,7 +6,15 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { prisma } from './db';
 import { router } from './router';
-import { createShopForUser, createShopInputSchema, listShopsForUser } from './shops';
+import {
+  createShopForUser,
+  createShopInputSchema,
+  listShopsForUser,
+  ShopEditForbiddenError,
+  ShopNotFoundForUserError,
+  updateShopBasicSettingsForUser,
+  updateShopBasicSettingsInputSchema,
+} from './shops';
 
 const frontendOrigin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
 
@@ -95,7 +103,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (pathname === '/api/shops' && req.method === 'OPTIONS') {
+  if (pathname.startsWith('/api/shops') && req.method === 'OPTIONS') {
     res.statusCode = 204;
     res.end();
     return;
@@ -142,6 +150,71 @@ const server = createServer(async (req, res) => {
         return;
       }
     } catch (error) {
+      console.error('Shop API error:', error);
+      sendJson(res, 500, { error: 'Internal server error' });
+      return;
+    }
+
+    sendJson(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
+  const shopDetailMatch = pathname.match(/^\/api\/shops\/([^/]+)$/);
+
+  if (shopDetailMatch) {
+    const session = await getSession(req);
+    const userId = getSessionUserId(session);
+
+    if (!userId) {
+      sendJson(res, 401, { error: 'Unauthorized' });
+      return;
+    }
+
+    let shopId: string;
+
+    try {
+      shopId = decodeURIComponent(shopDetailMatch[1]);
+    } catch {
+      sendJson(res, 400, { error: 'Invalid shop id' });
+      return;
+    }
+
+    try {
+      if (req.method === 'PATCH') {
+        let payload: unknown;
+
+        try {
+          payload = await readJsonBody(req);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON payload' });
+          return;
+        }
+
+        const parsedPayload = updateShopBasicSettingsInputSchema.safeParse(payload);
+
+        if (!parsedPayload.success) {
+          sendJson(res, 400, {
+            error: 'Invalid shop payload',
+            issues: parsedPayload.error.issues,
+          });
+          return;
+        }
+
+        const shop = await updateShopBasicSettingsForUser(userId, shopId, parsedPayload.data);
+        sendJson(res, 200, { shop });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof ShopNotFoundForUserError) {
+        sendJson(res, 404, { error: error.message });
+        return;
+      }
+
+      if (error instanceof ShopEditForbiddenError) {
+        sendJson(res, 403, { error: error.message });
+        return;
+      }
+
       console.error('Shop API error:', error);
       sendJson(res, 500, { error: 'Internal server error' });
       return;

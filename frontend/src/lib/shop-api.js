@@ -35,3 +35,19 @@ export async function createShop(input) {
   const body = await readResponse(response);
   return body.shop;
 }
+
+export async function updateShopBasicSettings(shopId, input) {
+  const response = await fetch(
+    `${backendBaseUrl}/api/shops/${encodeURIComponent(shopId)}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+  const body = await readResponse(response);
+  return body.shop;
+}
