@@ -6,6 +6,7 @@ import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 import classNames from "classnames";
 import { IconBook, IconHome, IconRobot } from "@tabler/icons-react";
+import { DitherMeshGradientFill } from "../dither/dither";
 
 const APP_NAME = "FabDesk";
 
@@ -24,6 +25,7 @@ export function Page({
   loading = false,
   shopId,
   breadcrumbs = [],
+  headerContent,
 }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -83,18 +85,18 @@ export function Page({
               </a>
             ))}
           </div>
-          <div className={styles.content}>
-            {breadcrumbs.length > 0 && (
-              <Breadcrumbs breadcrumbs={breadcrumbs} />
-            )}
-            <div className={styles.innerContent}>{content}</div>
-          </div>
+          <PageContent
+            breadcrumbs={breadcrumbs}
+            content={content}
+            headerContent={headerContent || <h1>{title}</h1>}
+          />
         </div>
       ) : (
-        <div className={styles.content}>
-          {breadcrumbs.length > 0 && <Breadcrumbs breadcrumbs={breadcrumbs} />}
-          <div className={styles.innerContent}>{content}</div>
-        </div>
+        <PageContent
+          breadcrumbs={breadcrumbs}
+          content={content}
+          headerContent={headerContent || <h1>{title}</h1>}
+        />
       )}
       <footer className={styles.footer}>
         <small>
@@ -112,6 +114,21 @@ export function Page({
     </div>
   );
 }
+
+const PageContent = ({ breadcrumbs, content, headerContent }) => {
+  return (
+    <div className={styles.content}>
+      {breadcrumbs.length > 0 && <Breadcrumbs breadcrumbs={breadcrumbs} />}
+      {headerContent ? (
+        <div className={styles.headerContent}>
+          <DitherMeshGradientFill />
+          {headerContent}
+        </div>
+      ) : null}
+      <div className={styles.innerContent}>{content}</div>
+    </div>
+  );
+};
 
 const Breadcrumbs = ({ breadcrumbs }) => {
   return (

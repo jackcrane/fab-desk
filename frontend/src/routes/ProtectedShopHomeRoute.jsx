@@ -18,7 +18,7 @@ export function ProtectedShopHomeRoute({ navigate, shopId }) {
 
   return (
     <Page
-      title="App"
+      title={activeShop.name}
       shopId={activeShop.id}
       loading={isLoading}
       sidenavItems={sidenavItems({

@@ -173,22 +173,30 @@ export const DitherMeshGradient = ({
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      const w = Math.max(1, Math.floor(rect.width));
-      const h = Math.max(1, Math.floor(rect.height));
-      st.dpr = dpr;
-      st.w = w;
-      st.h = h;
 
-      const iw = Math.max(64, Math.floor((w * quality) / pixelSize));
-      const ih = Math.max(64, Math.floor((h * quality) / pixelSize));
-      st.iw = iw;
-      st.ih = ih;
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+
+      // round UP so we never underfill
+      const cellsX = Math.max(1, Math.ceil(w / pixelSize));
+      const cellsY = Math.max(1, Math.ceil(h / pixelSize));
+
+      const iw = Math.floor(cellsX * quality);
+      const ih = Math.floor(cellsY * quality);
 
       canvas.width = iw;
       canvas.height = ih;
 
+      // always fill container
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+
       ctx.imageSmoothingEnabled = false;
+
+      st.w = w;
+      st.h = h;
+      st.iw = iw;
+      st.ih = ih;
 
       const imageData = ctx.createImageData(iw, ih);
       st.imageData = imageData;
