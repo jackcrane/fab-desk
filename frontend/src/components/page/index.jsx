@@ -69,7 +69,10 @@ export function Page({
         {session ? (
           <Dropdown
             items={[
-              { label: "Profile", onClick: () => navigate(shopHomePath(shopId)) },
+              {
+                label: "Profile",
+                onClick: () => navigate(shopHomePath(shopId)),
+              },
               { label: "Switch Shop", onClick: () => navigate("/shop") },
               { label: "Sign out", onClick: onSignOut },
             ]}
@@ -185,19 +188,19 @@ export const sidenavItems = ({ activePage, shopId }) => {
       path: homePath,
       label: "Home",
       active: activePage === "home",
-      icon: <IconHome size={32} />,
+      icon: <IconHome size={32} strokeWidth={1.5} />,
     },
     {
       path: `${homePath}/jobs`,
       label: "Jobs",
       active: activePage === "jobs",
-      icon: <IconRobot size={32} />,
+      icon: <IconRobot size={32} strokeWidth={1.5} />,
     },
     {
       path: `${homePath}/kb`,
       label: "Knowledge Base",
       active: activePage === "kb",
-      icon: <IconBook size={32} />,
+      icon: <IconBook size={32} strokeWidth={1.5} />,
     },
     {
       type: "grow",
@@ -206,7 +209,7 @@ export const sidenavItems = ({ activePage, shopId }) => {
       path: `${homePath}/settings`,
       label: "Shop Settings",
       active: activePage === "settings",
-      icon: <IconSettings size={32} />,
+      icon: <IconSettings size={32} strokeWidth={1.5} />,
       noBorderBottom: true,
     },
   ];
