@@ -100,7 +100,7 @@ export const DitherMeshGradient = ({
 
   const mix = (a, b, t) => a + (b - a) * t;
 
-  const tick = (now) => {
+  const tick = (now, scheduleNext = true) => {
     const st = stateRef.current;
     const { ctx, iw, ih, imageData, buf, t0 } = st;
     if (!ctx || !imageData || !buf || iw <= 0 || ih <= 0) return;
@@ -155,7 +155,10 @@ export const DitherMeshGradient = ({
     }
 
     ctx.putImageData(imageData, 0, 0);
-    rafRef.current = requestAnimationFrame(tick);
+
+    if (scheduleNext) {
+      rafRef.current = requestAnimationFrame((n) => tick(n, true));
+    }
   };
 
   useEffect(() => {
@@ -198,7 +201,8 @@ export const DitherMeshGradient = ({
     resize();
     st.t0 = performance.now();
     cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(tick);
+    tick(st.t0, false);
+    rafRef.current = requestAnimationFrame((n) => tick(n, true));
 
     return () => {
       cancelAnimationFrame(rafRef.current);
