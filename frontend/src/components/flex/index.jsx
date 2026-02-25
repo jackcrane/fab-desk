@@ -7,6 +7,7 @@ export const Flex = ({
   direction = "column",
   align,
   justify,
+  wrap = "nowrap",
   ...props
 }) => {
   return (
@@ -18,6 +19,7 @@ export const Flex = ({
         flexDirection: direction,
         alignItems: align,
         justifyContent: justify,
+        flexWrap: wrap,
         ...props.style,
       }}
       {...props}

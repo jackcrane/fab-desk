@@ -200,7 +200,7 @@ export const sidenavItems = ({ activePage, shopId }) => {
       type: "grow",
     },
     {
-      path: `/${shopId}/settings`,
+      path: `${homePath}/settings`,
       label: "Shop Settings",
       active: activePage === "settings",
       icon: <IconSettings size={32} />,

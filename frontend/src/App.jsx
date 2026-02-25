@@ -4,6 +4,7 @@ import { SignInRoute } from "./routes/SignInRoute/index";
 import { SignUpRoute } from "./routes/SignUpRoute";
 import { ProtectedShopHomeRoute } from "./routes/ProtectedShopHomeRoute";
 import { ProtectedShopKbRoute } from "./routes/ProtectedShopKbRoute";
+import { ProtectedShopSettingsRoute } from "./routes/ProtectedShopSettingsRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute";
 import { ShopSelectRoute } from "./routes/ShopSelectRoute";
 
@@ -16,6 +17,14 @@ function parseShopRoute(pathname) {
     return {
       shopId: decodeURIComponent(kbMatch[1]),
       page: "kb",
+    };
+  }
+
+  const settingsMatch = normalizedPath.match(/^\/shop\/([^/]+)\/settings$/);
+  if (settingsMatch) {
+    return {
+      shopId: decodeURIComponent(settingsMatch[1]),
+      page: "settings",
     };
   }
 
@@ -48,6 +57,15 @@ export default function App() {
   if (shopRoute?.page === "kb") {
     return (
       <ProtectedShopKbRoute navigate={navigate} shopId={shopRoute.shopId} />
+    );
+  }
+
+  if (shopRoute?.page === "settings") {
+    return (
+      <ProtectedShopSettingsRoute
+        navigate={navigate}
+        shopId={shopRoute.shopId}
+      />
     );
   }
 
