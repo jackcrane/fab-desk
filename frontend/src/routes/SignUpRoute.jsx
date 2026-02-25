@@ -1,16 +1,20 @@
-import { useState } from 'react';
-import { authClient } from '../auth-client';
+import { useState } from "react";
+import { authClient } from "../auth-client";
+import { Button, Card, Hatch, Input } from "@jackcrane/ui";
+import { Flex } from "../components/flex";
+import { DitherMeshGradientFill } from "../components/dither/dither";
+import style from "./SignUpRoute.module.css";
 
 export function SignUpRoute({ navigate }) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    setError('');
+    setError("");
     setIsSubmitting(true);
 
     const result = await authClient.signUp.email({
@@ -22,53 +26,72 @@ export function SignUpRoute({ navigate }) {
     setIsSubmitting(false);
 
     if (result.error) {
-      setError(result.error.message ?? 'Unable to sign up');
+      setError(result.error.message ?? "Unable to sign up");
       return;
     }
 
-    navigate('/app', true);
+    navigate("/app", true);
   };
 
   return (
-    <main>
-      <h1>Hello world</h1>
-      <p>Sign up</p>
-      <form onSubmit={onSubmit}>
-        <label htmlFor="signup-name">Name</label>
-        <input
-          id="signup-name"
-          type="text"
-          value={name}
-          autoComplete="name"
-          onChange={(event) => setName(event.target.value)}
-          required
-        />
-        <label htmlFor="signup-email">Email</label>
-        <input
-          id="signup-email"
-          type="email"
-          value={email}
-          autoComplete="email"
-          onChange={(event) => setEmail(event.target.value)}
-          required
-        />
-        <label htmlFor="signup-password">Password</label>
-        <input
-          id="signup-password"
-          type="password"
-          value={password}
-          autoComplete="new-password"
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing up...' : 'Sign up'}
-        </button>
-      </form>
-      {error ? <p>{error}</p> : null}
-      <button type="button" onClick={() => navigate('/sign-in')}>
-        Already have an account?
-      </button>
+    <main className={style.main}>
+      <DitherMeshGradientFill />
+      <Card
+        title="Sign Up"
+        footer={
+          <Button type="button" onClick={() => navigate("/sign-in")}>
+            Already have an account?
+          </Button>
+        }
+        footerHeight={40}
+      >
+        <div className={style.form}>
+          <form onSubmit={onSubmit}>
+            <Flex gap={2}>
+              <Input
+                type="text"
+                value={name}
+                autoComplete="name"
+                onChange={(event) => setName(event.target.value)}
+                required
+                placeholder="Alex Rivera"
+                label="Name"
+              />
+              <Input
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                placeholder="you@example.com"
+                label="Email"
+              />
+              <Input
+                type="password"
+                value={password}
+                autoComplete="new-password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                placeholder="••••••••"
+                label="Password"
+              />
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                variant="primary"
+                loading={isSubmitting}
+              >
+                {isSubmitting ? "Signing up..." : "Sign up"}
+              </Button>
+              {error ? (
+                <Hatch variant="danger" footerHeight={12}>
+                  {error}
+                </Hatch>
+              ) : null}
+            </Flex>
+          </form>
+        </div>
+      </Card>
     </main>
   );
 }
