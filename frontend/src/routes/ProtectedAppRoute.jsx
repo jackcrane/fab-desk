@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../auth-client";
 import { Page, sidenavItems } from "../components/page";
-import { clearActiveShopId, getActiveShopId } from "../lib/active-shop";
+import {
+  clearActiveShopId,
+  getActiveShopId,
+  setActiveShopId,
+} from "../lib/active-shop";
 import { listShops } from "../lib/shop-api";
 
-export function ProtectedAppRoute({ navigate }) {
+export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
   const { data: session, isPending } = authClient.useSession();
   const [activeShop, setActiveShop] = useState(null);
   const [isCheckingShop, setIsCheckingShop] = useState(true);
@@ -22,10 +26,13 @@ export function ProtectedAppRoute({ navigate }) {
       return;
     }
 
-    const activeShopId = getActiveShopId();
-    if (!activeShopId) {
-      navigate("/select-shop", true);
+    if (!shopId) {
+      navigate("/shop", true);
       return;
+    }
+
+    if (getActiveShopId() !== shopId) {
+      setActiveShopId(shopId);
     }
 
     let cancelled = false;
@@ -38,10 +45,10 @@ export function ProtectedAppRoute({ navigate }) {
           return;
         }
 
-        const selectedShop = shops.find((shop) => shop.id === activeShopId);
+        const selectedShop = shops.find((shop) => shop.id === shopId);
         if (!selectedShop) {
           clearActiveShopId();
-          navigate("/select-shop", true);
+          navigate("/shop", true);
           return;
         }
 
@@ -63,7 +70,7 @@ export function ProtectedAppRoute({ navigate }) {
     return () => {
       cancelled = true;
     };
-  }, [isPending, navigate, session]);
+  }, [isPending, navigate, session, shopId]);
 
   if (!isPending && !session) {
     return null;
@@ -84,20 +91,25 @@ export function ProtectedAppRoute({ navigate }) {
 
   return (
     <Page
-      title="App"
+      title={page === "kb" ? "Knowledge Base" : "App"}
+      shopId={activeShop.id}
       loading={isLoading && hasActiveShop}
       sidenavItems={sidenavItems({
-        activePage: "home",
+        activePage: page,
+        shopId: activeShop.id,
       })}
     >
       <main>
-        <h1>Hello world</h1>
-        <p>Protected route: /app</p>
+        <h1>{page === "kb" ? "Knowledge Base" : "Hello world"}</h1>
+        <p>
+          Protected route:{" "}
+          {page === "kb" ? "/shop/:shopId/kb" : "/shop/:shopId"}
+        </p>
         <p>Current shop: {activeShop.name}</p>
         <p>Organization: {activeShop.organization}</p>
         <p>Your role: {activeShop.role}</p>
         <p>Signed in as {session.user.email}</p>
-        <button type="button" onClick={() => navigate("/select-shop")}>
+        <button type="button" onClick={() => navigate("/shop")}>
           Switch shop
         </button>
         <button type="button" onClick={onSignOut} disabled={isSigningOut}>

@@ -6,15 +6,38 @@ import { ProtectedAppRoute } from "./routes/ProtectedAppRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute";
 import { ShopSelectRoute } from "./routes/ShopSelectRoute";
 
+function parseShopRoute(pathname) {
+  const shopPathMatch = pathname.match(/^\/shop\/([^/]+)(?:\/(.*))?$/);
+  if (!shopPathMatch) {
+    return null;
+  }
+
+  const shopId = decodeURIComponent(shopPathMatch[1]);
+  const section = shopPathMatch[2]?.replace(/\/+$/, "");
+
+  return {
+    shopId,
+    page: section === "kb" ? "kb" : "home",
+  };
+}
+
 export default function App() {
   const { pathname, navigate } = usePathname();
 
   if (pathname === "/") return <HomeRoute navigate={navigate} />;
   if (pathname === "/sign-in") return <SignInRoute navigate={navigate} />;
   if (pathname === "/sign-up") return <SignUpRoute navigate={navigate} />;
-  if (pathname === "/select-shop") return <ShopSelectRoute navigate={navigate} />;
-  if (pathname === "/app" || pathname.startsWith("/app/")) {
-    return <ProtectedAppRoute navigate={navigate} />;
+  if (pathname === "/shop") return <ShopSelectRoute navigate={navigate} />;
+
+  const shopRoute = parseShopRoute(pathname);
+  if (shopRoute) {
+    return (
+      <ProtectedAppRoute
+        navigate={navigate}
+        shopId={shopRoute.shopId}
+        page={shopRoute.page}
+      />
+    );
   }
 
   return <NotFoundRoute navigate={navigate} />;

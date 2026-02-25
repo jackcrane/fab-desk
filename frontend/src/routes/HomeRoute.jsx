@@ -12,7 +12,7 @@ export function HomeRoute({ navigate }) {
         {session ? (
           <>
             <p>Signed in as {session.user.email}</p>
-            <button type="button" onClick={() => navigate('/select-shop')}>
+            <button type="button" onClick={() => navigate('/shop')}>
               Continue to shop selection
             </button>
           </>

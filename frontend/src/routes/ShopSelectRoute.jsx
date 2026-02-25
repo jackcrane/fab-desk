@@ -5,12 +5,15 @@ import { Page } from "../components/page";
 import { DitherMeshGradientFill } from "../components/dither/dither";
 import {
   clearActiveShopId,
-  getActiveShopId,
   setActiveShopId,
 } from "../lib/active-shop";
 import { createShop, listShops } from "../lib/shop-api";
 import style from "./ShopSelectRoute.module.css";
 import { Flex } from "../components/flex";
+
+function shopPath(shopId) {
+  return `/shop/${encodeURIComponent(shopId)}`;
+}
 
 export function ShopSelectRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
@@ -22,8 +25,6 @@ export function ShopSelectRoute({ navigate }) {
   const [primaryContactEmail, setPrimaryContactEmail] = useState("");
   const [createError, setCreateError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-
-  const activeShopId = getActiveShopId();
 
   const loadShops = useCallback(async () => {
     setLoadError("");
@@ -81,7 +82,7 @@ export function ShopSelectRoute({ navigate }) {
       setOrganization("");
       setPrimaryContactEmail("");
       setActiveShopId(createdShop.id);
-      navigate("/app", true);
+      navigate(shopPath(createdShop.id), true);
     } catch (error) {
       setCreateError(error?.message ?? "Unable to create shop");
     } finally {
@@ -136,7 +137,7 @@ export function ShopSelectRoute({ navigate }) {
 
   const onSelectShop = (shopId) => {
     setActiveShopId(shopId);
-    navigate("/app", true);
+    navigate(shopPath(shopId), true);
   };
 
   return (

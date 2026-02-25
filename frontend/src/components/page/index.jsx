@@ -9,7 +9,15 @@ import { IconBook, IconHome } from "@tabler/icons-react";
 
 const APP_NAME = "FabDesk";
 
-export function Page({ title, children, sidenavItems, loading = false }) {
+function shopHomePath(shopId) {
+  if (!shopId) {
+    return "/shop";
+  }
+
+  return `/shop/${encodeURIComponent(shopId)}`;
+}
+
+export function Page({ title, children, sidenavItems, loading = false, shopId }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -44,8 +52,8 @@ export function Page({ title, children, sidenavItems, loading = false }) {
         {session ? (
           <Dropdown
             items={[
-              { label: "Profile", href: "/app/profile" },
-              { label: "Switch Shop", href: "/select-shop" },
+              { label: "Profile", href: shopHomePath(shopId) },
+              { label: "Switch Shop", href: "/shop" },
               { label: "Sign out", onClick: onSignOut },
             ]}
             triggerLabel={session.user.name ?? session.user.email}
@@ -90,16 +98,18 @@ export function Page({ title, children, sidenavItems, loading = false }) {
   );
 }
 
-export const sidenavItems = ({ activePage }) => {
+export const sidenavItems = ({ activePage, shopId }) => {
+  const homePath = shopHomePath(shopId);
+
   return [
     {
-      path: "/app",
+      path: homePath,
       label: "Home",
       active: activePage === "home",
       icon: <IconHome size={32} />,
     },
     {
-      path: "/kb",
+      path: `${homePath}/kb`,
       label: "Knowledge Base",
       active: activePage === "kb",
       icon: <IconBook size={32} />,
