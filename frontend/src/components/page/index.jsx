@@ -5,7 +5,12 @@ import { authClient } from "../../auth-client";
 import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 import classNames from "classnames";
-import { IconBook, IconHome, IconRobot } from "@tabler/icons-react";
+import {
+  IconBook,
+  IconHome,
+  IconRobot,
+  IconSettings,
+} from "@tabler/icons-react";
 import { DitherMeshGradientFill } from "../dither/dither";
 
 const APP_NAME = "FabDesk";
@@ -73,18 +78,32 @@ export function Page({
       {sidenavItems ? (
         <div className={styles.contentWrap}>
           <div className={styles.sidenav}>
-            {sidenavItems.map((item) => (
-              <a
-                key={item.path}
-                href={item.path}
-                className={
-                  item.active ? classNames(styles.active, "jcui_hatch") : null
-                }
-              >
-                {item.icon}
-                <div className={classNames(styles.label)}>{item.label}</div>
-              </a>
-            ))}
+            {sidenavItems.map((item) =>
+              item.type === "grow" ? (
+                <div
+                  style={{
+                    flex: 1,
+                    borderBottom: "1px solid var(--border-color)",
+                  }}
+                />
+              ) : (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  className={
+                    item.active ? classNames(styles.active, "jcui_hatch") : null
+                  }
+                  style={{
+                    borderBottom: item.noBorderBottom
+                      ? "none"
+                      : "1px solid var(--border-color)",
+                  }}
+                >
+                  {item.icon}
+                  <div className={classNames(styles.label)}>{item.label}</div>
+                </a>
+              ),
+            )}
           </div>
           <PageContent
             breadcrumbs={breadcrumbs}
@@ -107,7 +126,9 @@ export function Page({
           <a
             href="https://cranedigitalplatforms.com/"
             target="_blank"
-            style={{ color: "black" }}
+            style={{
+              color: "black",
+            }}
           >
             A product of Crane Digital Platforms
           </a>
@@ -174,6 +195,16 @@ export const sidenavItems = ({ activePage, shopId }) => {
       label: "Knowledge Base",
       active: activePage === "kb",
       icon: <IconBook size={32} />,
+    },
+    {
+      type: "grow",
+    },
+    {
+      path: `/${shopId}/settings`,
+      label: "Shop Settings",
+      active: activePage === "settings",
+      icon: <IconSettings size={32} />,
+      noBorderBottom: true,
     },
   ];
 };
