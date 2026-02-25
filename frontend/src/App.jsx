@@ -2,23 +2,32 @@ import { usePathname } from "./hooks/usePathname";
 import { HomeRoute } from "./routes/HomeRoute";
 import { SignInRoute } from "./routes/SignInRoute/index";
 import { SignUpRoute } from "./routes/SignUpRoute";
-import { ProtectedAppRoute } from "./routes/ProtectedAppRoute";
+import { ProtectedShopHomeRoute } from "./routes/ProtectedShopHomeRoute";
+import { ProtectedShopKbRoute } from "./routes/ProtectedShopKbRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute";
 import { ShopSelectRoute } from "./routes/ShopSelectRoute";
 
 function parseShopRoute(pathname) {
-  const shopPathMatch = pathname.match(/^\/shop\/([^/]+)(?:\/(.*))?$/);
-  if (!shopPathMatch) {
-    return null;
+  const normalizedPath =
+    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+  const kbMatch = normalizedPath.match(/^\/shop\/([^/]+)\/kb$/);
+  if (kbMatch) {
+    return {
+      shopId: decodeURIComponent(kbMatch[1]),
+      page: "kb",
+    };
   }
 
-  const shopId = decodeURIComponent(shopPathMatch[1]);
-  const section = shopPathMatch[2]?.replace(/\/+$/, "");
+  const homeMatch = normalizedPath.match(/^\/shop\/([^/]+)$/);
+  if (homeMatch) {
+    return {
+      shopId: decodeURIComponent(homeMatch[1]),
+      page: "home",
+    };
+  }
 
-  return {
-    shopId,
-    page: section === "kb" ? "kb" : "home",
-  };
+  return null;
 }
 
 export default function App() {
@@ -30,13 +39,15 @@ export default function App() {
   if (pathname === "/shop") return <ShopSelectRoute navigate={navigate} />;
 
   const shopRoute = parseShopRoute(pathname);
-  if (shopRoute) {
+  if (shopRoute?.page === "home") {
     return (
-      <ProtectedAppRoute
-        navigate={navigate}
-        shopId={shopRoute.shopId}
-        page={shopRoute.page}
-      />
+      <ProtectedShopHomeRoute navigate={navigate} shopId={shopRoute.shopId} />
+    );
+  }
+
+  if (shopRoute?.page === "kb") {
+    return (
+      <ProtectedShopKbRoute navigate={navigate} shopId={shopRoute.shopId} />
     );
   }
 

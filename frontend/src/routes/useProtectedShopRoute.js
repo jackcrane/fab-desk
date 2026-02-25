@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../auth-client";
-import { Page, sidenavItems } from "../components/page";
 import {
   clearActiveShopId,
   getActiveShopId,
@@ -8,11 +7,10 @@ import {
 } from "../lib/active-shop";
 import { listShops } from "../lib/shop-api";
 
-export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
+export function useProtectedShopRoute({ navigate, shopId }) {
   const { data: session, isPending } = authClient.useSession();
   const [activeShop, setActiveShop] = useState(null);
   const [isCheckingShop, setIsCheckingShop] = useState(true);
-  const [shopError, setShopError] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
@@ -36,7 +34,6 @@ export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
     }
 
     let cancelled = false;
-    setShopError("");
     setIsCheckingShop(true);
 
     listShops()
@@ -54,12 +51,11 @@ export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
 
         setActiveShop(selectedShop);
       })
-      .catch((error) => {
-        if (cancelled) {
-          return;
+      .catch(() => {
+        if (!cancelled) {
+          clearActiveShopId();
+          navigate("/shop", true);
         }
-
-        setShopError(error?.message ?? "Unable to verify shop access");
       })
       .finally(() => {
         if (!cancelled) {
@@ -72,10 +68,6 @@ export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
     };
   }, [isPending, navigate, session, shopId]);
 
-  if (!isPending && !session) {
-    return null;
-  }
-
   const onSignOut = async () => {
     setIsSigningOut(true);
     clearActiveShopId();
@@ -84,38 +76,12 @@ export function ProtectedAppRoute({ navigate, shopId, page = "home" }) {
     navigate("/sign-in", true);
   };
 
-  const isLoading = isPending || isCheckingShop;
-  const hasActiveShop = Boolean(activeShop);
-
-  if (!hasActiveShop) return null;
-
-  return (
-    <Page
-      title={page === "kb" ? "Knowledge Base" : "App"}
-      shopId={activeShop.id}
-      loading={isLoading && hasActiveShop}
-      sidenavItems={sidenavItems({
-        activePage: page,
-        shopId: activeShop.id,
-      })}
-    >
-      <main>
-        <h1>{page === "kb" ? "Knowledge Base" : "Hello world"}</h1>
-        <p>
-          Protected route:{" "}
-          {page === "kb" ? "/shop/:shopId/kb" : "/shop/:shopId"}
-        </p>
-        <p>Current shop: {activeShop.name}</p>
-        <p>Organization: {activeShop.organization}</p>
-        <p>Your role: {activeShop.role}</p>
-        <p>Signed in as {session.user.email}</p>
-        <button type="button" onClick={() => navigate("/shop")}>
-          Switch shop
-        </button>
-        <button type="button" onClick={onSignOut} disabled={isSigningOut}>
-          {isSigningOut ? "Signing out..." : "Sign out"}
-        </button>
-      </main>
-    </Page>
-  );
+  return {
+    session,
+    isPending,
+    activeShop,
+    isLoading: isPending || isCheckingShop,
+    isSigningOut,
+    onSignOut,
+  };
 }

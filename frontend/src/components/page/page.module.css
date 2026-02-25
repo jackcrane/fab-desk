@@ -84,6 +84,7 @@
   align-items: center;
   padding: 0 8px;
   opacity: 0;
+  pointer-events: none;
 }
 
 .content {
