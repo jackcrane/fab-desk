@@ -26,6 +26,7 @@ export function Page({
   shopId,
   breadcrumbs = [],
   headerContent,
+  showHeader = true,
 }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -89,6 +90,7 @@ export function Page({
             breadcrumbs={breadcrumbs}
             content={content}
             headerContent={headerContent || <h1>{title}</h1>}
+            showHeader={showHeader}
           />
         </div>
       ) : (
@@ -115,11 +117,11 @@ export function Page({
   );
 }
 
-const PageContent = ({ breadcrumbs, content, headerContent }) => {
+const PageContent = ({ breadcrumbs, content, headerContent, showHeader }) => {
   return (
     <div className={styles.content}>
       {breadcrumbs.length > 0 && <Breadcrumbs breadcrumbs={breadcrumbs} />}
-      {headerContent ? (
+      {headerContent && showHeader ? (
         <div className={styles.headerContent}>
           <DitherMeshGradientFill />
           {headerContent}
