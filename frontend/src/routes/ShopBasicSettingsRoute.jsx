@@ -3,7 +3,7 @@ import { Button, Hatch, Input } from "@jackcrane/ui";
 import { Page, sidenavItems } from "../components/page";
 import { useShopRoute } from "./useShopRoute";
 import { Flex } from "../components/flex";
-import { updateShopBasicSettings } from "../lib/shop-api";
+import { useUpdateShopBasicSettingsMutation } from "../lib/shops-orpc";
 
 export function ShopBasicSettingsRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading } = useShopRoute({
@@ -18,9 +18,10 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     organization: "",
     primaryContactEmail: "",
   });
+  const { trigger: updateShopBasicSettings, isMutating: isSaving } =
+    useUpdateShopBasicSettingsMutation();
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!activeShop) {
@@ -82,12 +83,12 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
       return;
     }
 
-    setIsSaving(true);
-
     try {
       const updatedShop = await updateShopBasicSettings(
-        activeShop.id,
-        normalizedValues,
+        {
+          shopId: activeShop.id,
+          ...normalizedValues,
+        },
       );
       const nextValues = {
         name: updatedShop.name ?? "",
@@ -102,8 +103,6 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
       setSaveSuccess("Basic settings saved.");
     } catch (error) {
       setSaveError(error?.message ?? "Unable to save settings.");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -111,8 +110,18 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
     return null;
   }
 
-  if (!activeShop) {
-    return null;
+  if (isLoading || !activeShop) {
+    return (
+      <Page
+        title="Basic Settings"
+        shopId={shopId}
+        loading
+        sidenavItems={sidenavItems({
+          activePage: "settings",
+          shopId,
+        })}
+      />
+    );
   }
 
   return (

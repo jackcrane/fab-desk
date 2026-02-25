@@ -1,17 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authClient } from "../auth-client";
 import {
   clearActiveShopId,
   getActiveShopId,
   setActiveShopId,
 } from "../lib/active-shop";
-import { listShops } from "../lib/shop-api";
+import { useShopsQuery } from "../lib/shops-orpc";
 
 export function useShopRoute({ navigate, shopId }) {
   const { data: session, isPending } = authClient.useSession();
-  const [activeShop, setActiveShop] = useState(null);
-  const [isCheckingShop, setIsCheckingShop] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const canQueryShops = !!shopId;
+  const {
+    data: shops,
+    error: shopsError,
+    isLoading: isLoadingShops,
+  } = useShopsQuery({
+    enabled: canQueryShops,
+    shouldRetryOnError: false,
+  });
+
+  const activeShop = useMemo(() => {
+    if (!shopId || !shops) {
+      return null;
+    }
+
+    return shops.find((shop) => shop.id === shopId) ?? null;
+  }, [shopId, shops]);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -32,41 +47,41 @@ export function useShopRoute({ navigate, shopId }) {
     if (getActiveShopId() !== shopId) {
       setActiveShopId(shopId);
     }
-
-    let cancelled = false;
-    setIsCheckingShop(true);
-
-    listShops()
-      .then((shops) => {
-        if (cancelled) {
-          return;
-        }
-
-        const selectedShop = shops.find((shop) => shop.id === shopId);
-        if (!selectedShop) {
-          clearActiveShopId();
-          navigate("/shop", true);
-          return;
-        }
-
-        setActiveShop(selectedShop);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          clearActiveShopId();
-          navigate("/shop", true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsCheckingShop(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, [isPending, navigate, session, shopId]);
+
+  useEffect(() => {
+    if (!canQueryShops || isLoadingShops) {
+      return;
+    }
+
+    if (shopsError) {
+      const errorCode =
+        typeof shopsError === "object" && shopsError
+          ? shopsError.code
+          : undefined;
+
+      if (errorCode === "UNAUTHORIZED") {
+        clearActiveShopId();
+        navigate("/sign-in", true);
+        return;
+      }
+
+      clearActiveShopId();
+      navigate("/shop", true);
+      return;
+    }
+
+    if (!activeShop) {
+      clearActiveShopId();
+      navigate("/shop", true);
+    }
+  }, [
+    activeShop,
+    canQueryShops,
+    isLoadingShops,
+    navigate,
+    shopsError,
+  ]);
 
   const onSignOut = async () => {
     setIsSigningOut(true);
@@ -80,7 +95,7 @@ export function useShopRoute({ navigate, shopId }) {
     session,
     isPending,
     activeShop,
-    isLoading: isPending || isCheckingShop,
+    isLoading: (canQueryShops && isLoadingShops) || (!activeShop && isPending),
     isSigningOut,
     onSignOut,
   };

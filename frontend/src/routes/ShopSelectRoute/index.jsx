@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, Hatch, Input, useModal } from "@jackcrane/ui";
 import { authClient } from "../../auth-client";
 import { Page } from "../../components/page";
 import { DitherMeshGradientFill } from "../../components/dither/dither";
 import { clearActiveShopId, setActiveShopId } from "../../lib/active-shop";
-import { createShop, listShops } from "../../lib/shop-api";
+import { useCreateShopMutation, useShopsQuery } from "../../lib/shops-orpc";
 import style from "./ShopSelectRoute.module.css";
 import { Flex } from "../../components/flex";
 
@@ -14,28 +14,19 @@ function shopPath(shopId) {
 
 export function ShopSelectRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
-  const [shops, setShops] = useState([]);
-  const [isLoadingShops, setIsLoadingShops] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  const {
+    data: shops = [],
+    error: shopsError,
+    isLoading: isLoadingShops,
+  } = useShopsQuery({
+    enabled: !isPending,
+    shouldRetryOnError: false,
+  });
+  const { trigger: createShop, isMutating: isCreating } = useCreateShopMutation();
   const [shopName, setShopName] = useState("");
   const [organization, setOrganization] = useState("");
   const [primaryContactEmail, setPrimaryContactEmail] = useState("");
   const [createError, setCreateError] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-
-  const loadShops = useCallback(async () => {
-    setLoadError("");
-    setIsLoadingShops(true);
-
-    try {
-      const nextShops = await listShops();
-      setShops(nextShops);
-    } catch (error) {
-      setLoadError(error?.message ?? "Unable to load shops");
-    } finally {
-      setIsLoadingShops(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -43,14 +34,6 @@ export function ShopSelectRoute({ navigate }) {
       navigate("/sign-in", true);
     }
   }, [isPending, navigate, session]);
-
-  useEffect(() => {
-    if (isPending || !session) {
-      return;
-    }
-
-    loadShops();
-  }, [isPending, loadShops, session]);
 
   const onCreateShop = async (event) => {
     event.preventDefault();
@@ -65,8 +48,6 @@ export function ShopSelectRoute({ navigate }) {
       return;
     }
 
-    setIsCreating(true);
-
     try {
       const createdShop = await createShop({
         name: normalizedName,
@@ -74,7 +55,6 @@ export function ShopSelectRoute({ navigate }) {
         primaryContactEmail: normalizedPrimaryContactEmail,
       });
 
-      setShops((previousShops) => [...previousShops, createdShop]);
       setShopName("");
       setOrganization("");
       setPrimaryContactEmail("");
@@ -82,8 +62,6 @@ export function ShopSelectRoute({ navigate }) {
       navigate(shopPath(createdShop.id), true);
     } catch (error) {
       setCreateError(error?.message ?? "Unable to create shop");
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -137,13 +115,15 @@ export function ShopSelectRoute({ navigate }) {
     return null;
   }
 
+  const loadError = shopsError?.message ?? "";
+
   const onSelectShop = (shopId) => {
     setActiveShopId(shopId);
     navigate(shopPath(shopId), true);
   };
 
   return (
-    <Page title="Select Shop" loading={isPending || isLoadingShops}>
+    <Page title="Select Shop" loading={isPending || (!!session && isLoadingShops)}>
       <DitherMeshGradientFill />
       <Modal />
       <main className={style.main}>
