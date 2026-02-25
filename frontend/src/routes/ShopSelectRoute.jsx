@@ -130,7 +130,7 @@ export function ShopSelectRoute({ navigate }) {
     ),
   });
 
-  if (isPending || (!session && !isPending)) {
+  if (!isPending && !session) {
     return null;
   }
 
@@ -140,7 +140,7 @@ export function ShopSelectRoute({ navigate }) {
   };
 
   return (
-    <Page title="Select Shop">
+    <Page title="Select Shop" loading={isPending || isLoadingShops}>
       <DitherMeshGradientFill />
       <Modal />
       <main className={style.main}>
@@ -164,13 +164,12 @@ export function ShopSelectRoute({ navigate }) {
               <p className={style.kicker}>
                 Your account can access multiple shops. Pick one to continue.
               </p>
-              {isLoadingShops ? <p>Loading shops...</p> : null}
               {loadError ? (
                 <Hatch variant="danger" footerHeight={12}>
                   {loadError}
                 </Hatch>
               ) : null}
-              {!isLoadingShops && !loadError ? (
+              {!loadError ? (
                 <>
                   {shops.length === 0 ? (
                     <Hatch variant="warning" footerHeight={12}>

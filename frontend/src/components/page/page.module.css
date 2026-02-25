@@ -65,6 +65,20 @@
   flex-direction: row;
 }
 
+.loadingState {
+  width: 100%;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.loadingState p {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .footer {
   padding: 20px 24px 32px;
   border-top: 1px solid var(--border-color);

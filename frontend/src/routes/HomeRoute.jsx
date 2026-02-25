@@ -5,12 +5,11 @@ export function HomeRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
 
   return (
-    <Page title="Home">
+    <Page title="Home" loading={isPending}>
       <main>
         <h1>Hello world</h1>
         <p>This is the public home route.</p>
-        {isPending ? <p>Checking session...</p> : null}
-        {!isPending && session ? (
+        {session ? (
           <>
             <p>Signed in as {session.user.email}</p>
             <button type="button" onClick={() => navigate('/select-shop')}>
@@ -18,7 +17,7 @@ export function HomeRoute({ navigate }) {
             </button>
           </>
         ) : null}
-        {!isPending && !session ? (
+        {!session ? (
           <>
             <button type="button" onClick={() => navigate('/sign-in')}>
               Sign in

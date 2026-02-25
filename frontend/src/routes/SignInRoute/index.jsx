@@ -19,7 +19,7 @@ export function SignInRoute({ navigate }) {
     }
   }, [isPending, navigate, session]);
 
-  if (isPending || session) {
+  if (!isPending && session) {
     return null;
   }
 
@@ -44,57 +44,59 @@ export function SignInRoute({ navigate }) {
   };
 
   return (
-    <Page title="Sign In">
-      <main className={style.main}>
-        <DitherMeshGradientFill />
-        <Card
-          title="Sign In"
-          footer={
-            <Button type="button" onClick={() => navigate("/sign-up")}>
-              Need an account?
-            </Button>
-          }
-          footerHeight={40}
-        >
-          <div className={style.form}>
-            <form onSubmit={onSubmit}>
-              <Flex gap={2}>
-                <Input
-                  type="email"
-                  value={email}
-                  autoComplete="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                  placeholder="you@example.com"
-                  label="Email"
-                />
-                <Input
-                  type="password"
-                  value={password}
-                  autoComplete="current-password"
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  placeholder="••••••••"
-                  label="Password"
-                />
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="primary"
-                  loading={isSubmitting}
-                >
-                  {isSubmitting ? "Signing in..." : "Sign in"}
-                </Button>
-                {error ? (
-                  <Hatch variant="danger" footerHeight={12}>
-                    {error}
-                  </Hatch>
-                ) : null}
-              </Flex>
-            </form>
-          </div>
-        </Card>
-      </main>
+    <Page title="Sign In" loading={isPending}>
+      {!isPending ? (
+        <main className={style.main}>
+          <DitherMeshGradientFill />
+          <Card
+            title="Sign In"
+            footer={
+              <Button type="button" onClick={() => navigate("/sign-up")}>
+                Need an account?
+              </Button>
+            }
+            footerHeight={40}
+          >
+            <div className={style.form}>
+              <form onSubmit={onSubmit}>
+                <Flex gap={2}>
+                  <Input
+                    type="email"
+                    value={email}
+                    autoComplete="email"
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    label="Email"
+                  />
+                  <Input
+                    type="password"
+                    value={password}
+                    autoComplete="current-password"
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    placeholder="••••••••"
+                    label="Password"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant="primary"
+                    loading={isSubmitting}
+                  >
+                    {isSubmitting ? "Signing in..." : "Sign in"}
+                  </Button>
+                  {error ? (
+                    <Hatch variant="danger" footerHeight={12}>
+                      {error}
+                    </Hatch>
+                  ) : null}
+                </Flex>
+              </form>
+            </div>
+          </Card>
+        </main>
+      ) : null}
     </Page>
   );
 }

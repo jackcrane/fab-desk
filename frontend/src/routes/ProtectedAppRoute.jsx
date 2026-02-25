@@ -65,44 +65,8 @@ export function ProtectedAppRoute({ navigate }) {
     };
   }, [isPending, navigate, session]);
 
-  if (isPending) {
-    return (
-      <Page title="App">
-        <main>
-          <h1>Hello world</h1>
-          <p>Checking auth...</p>
-        </main>
-      </Page>
-    );
-  }
-
-  if (!session) {
+  if (!isPending && !session) {
     return null;
-  }
-
-  if (isCheckingShop) {
-    return (
-      <Page title="App">
-        <main>
-          <h1>Hello world</h1>
-          <p>Checking shop access...</p>
-        </main>
-      </Page>
-    );
-  }
-
-  if (!activeShop) {
-    return (
-      <Page title="App">
-        <main>
-          <h1>Hello world</h1>
-          <p>{shopError || "No active shop selected."}</p>
-          <button type="button" onClick={() => navigate("/select-shop", true)}>
-            Go to shop selection
-          </button>
-        </main>
-      </Page>
-    );
   }
 
   const onSignOut = async () => {
@@ -113,15 +77,23 @@ export function ProtectedAppRoute({ navigate }) {
     navigate("/sign-in", true);
   };
 
+  const isLoading = isPending || isCheckingShop;
+  const hasActiveShop = Boolean(activeShop);
+
   return (
     <Page
       title="App"
-      sidenavItems={[
-        {
-          path: "",
-          label: "Home",
-        },
-      ]}
+      loading={isLoading}
+      sidenavItems={
+        hasActiveShop
+          ? [
+              {
+                path: "",
+                label: "Home",
+              },
+            ]
+          : undefined
+      }
     >
       <main>
         <h1>Hello world</h1>

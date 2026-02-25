@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
-import { Button, Dropdown, Hatch } from "@jackcrane/ui";
+import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 
 const APP_NAME = "FabDesk";
 
-export function Page({ title, children, sidenavItems }) {
+export function Page({
+  title,
+  children,
+  sidenavItems,
+  loading = false,
+}) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -24,6 +29,14 @@ export function Page({ title, children, sidenavItems }) {
       setIsSigningOut(false);
     }
   };
+
+  const content = loading ? (
+    <div className={styles.loadingState} role="status" aria-live="polite">
+      <p>Loading...</p>
+    </div>
+  ) : (
+    children
+  );
 
   return (
     <div className={styles.page}>
@@ -51,10 +64,10 @@ export function Page({ title, children, sidenavItems }) {
               </a>
             ))}
           </div>
-          <div className={styles.content}>{children}</div>
+          <div className={styles.content}>{content}</div>
         </div>
       ) : (
-        <div className={styles.content}>{children}</div>
+        <div className={styles.content}>{content}</div>
       )}
       <footer className={styles.footer}>
         <small>
