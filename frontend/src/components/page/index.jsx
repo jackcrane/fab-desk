@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
-import { Dropdown } from "@jackcrane/ui";
+import { Dropdown, Hatch } from "@jackcrane/ui";
 import { DitherMeshGradientFill } from "../dither/dither";
 
 const APP_NAME = "FabDesk";
@@ -26,7 +26,7 @@ export function Page({ title, children, noDither = false }) {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      <Hatch chamfer={false} className={styles.header}>
         <div className={styles.brand}>
           <img src={logo} alt={APP_NAME} className={styles.logo} />
         </div>
@@ -39,7 +39,7 @@ export function Page({ title, children, noDither = false }) {
             triggerLabel={session.user.name ?? session.user.email}
           />
         ) : null}
-      </header>
+      </Hatch>
       <div className={styles.content}>{children}</div>
       <footer className={styles.footer}>
         <small>
