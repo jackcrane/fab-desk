@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { authClient } from '../auth-client';
+import { useEffect, useState } from "react";
+import { authClient } from "../auth-client";
 import { Page } from "../components/page";
 import { clearActiveShopId, getActiveShopId } from "../lib/active-shop";
 import { listShops } from "../lib/shop-api";
@@ -13,7 +13,7 @@ export function ProtectedAppRoute({ navigate }) {
 
   useEffect(() => {
     if (!isPending && !session) {
-      navigate('/sign-in', true);
+      navigate("/sign-in", true);
     }
   }, [isPending, navigate, session]);
 
@@ -24,7 +24,7 @@ export function ProtectedAppRoute({ navigate }) {
 
     const activeShopId = getActiveShopId();
     if (!activeShopId) {
-      navigate('/select-shop', true);
+      navigate("/select-shop", true);
       return;
     }
 
@@ -41,7 +41,7 @@ export function ProtectedAppRoute({ navigate }) {
         const selectedShop = shops.find((shop) => shop.id === activeShopId);
         if (!selectedShop) {
           clearActiveShopId();
-          navigate('/select-shop', true);
+          navigate("/select-shop", true);
           return;
         }
 
@@ -52,7 +52,7 @@ export function ProtectedAppRoute({ navigate }) {
           return;
         }
 
-        setShopError(error?.message ?? 'Unable to verify shop access');
+        setShopError(error?.message ?? "Unable to verify shop access");
       })
       .finally(() => {
         if (!cancelled) {
@@ -96,8 +96,8 @@ export function ProtectedAppRoute({ navigate }) {
       <Page title="App">
         <main>
           <h1>Hello world</h1>
-          <p>{shopError || 'No active shop selected.'}</p>
-          <button type="button" onClick={() => navigate('/select-shop', true)}>
+          <p>{shopError || "No active shop selected."}</p>
+          <button type="button" onClick={() => navigate("/select-shop", true)}>
             Go to shop selection
           </button>
         </main>
@@ -110,11 +110,19 @@ export function ProtectedAppRoute({ navigate }) {
     clearActiveShopId();
     await authClient.signOut();
     setIsSigningOut(false);
-    navigate('/sign-in', true);
+    navigate("/sign-in", true);
   };
 
   return (
-    <Page title="App">
+    <Page
+      title="App"
+      sidenavItems={[
+        {
+          path: "",
+          label: "Home",
+        },
+      ]}
+    >
       <main>
         <h1>Hello world</h1>
         <p>Protected route: /app</p>
@@ -122,11 +130,11 @@ export function ProtectedAppRoute({ navigate }) {
         <p>Organization: {activeShop.organization}</p>
         <p>Your role: {activeShop.role}</p>
         <p>Signed in as {session.user.email}</p>
-        <button type="button" onClick={() => navigate('/select-shop')}>
+        <button type="button" onClick={() => navigate("/select-shop")}>
           Switch shop
         </button>
         <button type="button" onClick={onSignOut} disabled={isSigningOut}>
-          {isSigningOut ? 'Signing out...' : 'Sign out'}
+          {isSigningOut ? "Signing out..." : "Sign out"}
         </button>
       </main>
     </Page>

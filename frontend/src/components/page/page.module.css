@@ -30,13 +30,39 @@
   font-weight: 600;
 }
 
+.contentWrap {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+}
+
+.sidenav {
+  width: 160px;
+  background-color: var(--background-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+.sidenav a:hover {
+  background-color: var(--secondary-color-100);
+}
+
 .content {
+  display: flex;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 24px 32px;
   flex: 1;
   position: relative;
   min-height: 90vh;
+  flex-direction: row;
 }
 
 .footer {

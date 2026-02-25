@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
-import { Dropdown, Hatch } from "@jackcrane/ui";
+import { Button, Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 
 const APP_NAME = "FabDesk";
 
-export function Page({ title, children, noDither = false }) {
+export function Page({ title, children, sidenavItems }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -42,7 +42,20 @@ export function Page({ title, children, noDither = false }) {
           />
         ) : null}
       </Hatch>
-      <div className={styles.content}>{children}</div>
+      {sidenavItems ? (
+        <div className={styles.contentWrap}>
+          <div className={styles.sidenav}>
+            {sidenavItems.map((item) => (
+              <a key={item.path} href={item.path}>
+                {item.label}
+              </a>
+            ))}
+          </div>
+          <div className={styles.content}>{children}</div>
+        </div>
+      ) : (
+        <div className={styles.content}>{children}</div>
+      )}
       <footer className={styles.footer}>
         <small>
           &copy; {new Date().getFullYear()} {APP_NAME}
