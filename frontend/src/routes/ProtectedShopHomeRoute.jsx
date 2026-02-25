@@ -25,6 +25,16 @@ export function ProtectedShopHomeRoute({ navigate, shopId }) {
         activePage: "home",
         shopId: activeShop.id,
       })}
+      breadcrumbs={[
+        {
+          label: "Shops",
+          href: "/shop",
+        },
+        {
+          label: activeShop.name,
+          href: "/shop/" + activeShop.id,
+        },
+      ]}
     >
       <main>
         <h1>Hello world</h1>

@@ -5,7 +5,7 @@ import { authClient } from "../../auth-client";
 import { Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 import classNames from "classnames";
-import { IconBook, IconHome } from "@tabler/icons-react";
+import { IconBook, IconHome, IconRobot } from "@tabler/icons-react";
 
 const APP_NAME = "FabDesk";
 
@@ -17,7 +17,14 @@ function shopHomePath(shopId) {
   return `/shop/${encodeURIComponent(shopId)}`;
 }
 
-export function Page({ title, children, sidenavItems, loading = false, shopId }) {
+export function Page({
+  title,
+  children,
+  sidenavItems,
+  loading = false,
+  shopId,
+  breadcrumbs = [],
+}) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -76,10 +83,18 @@ export function Page({ title, children, sidenavItems, loading = false, shopId })
               </a>
             ))}
           </div>
-          <div className={styles.content}>{content}</div>
+          <div className={styles.content}>
+            {breadcrumbs.length > 0 && (
+              <Breadcrumbs breadcrumbs={breadcrumbs} />
+            )}
+            <div className={styles.innerContent}>{content}</div>
+          </div>
         </div>
       ) : (
-        <div className={styles.content}>{content}</div>
+        <div className={styles.content}>
+          {breadcrumbs.length > 0 && <Breadcrumbs breadcrumbs={breadcrumbs} />}
+          <div className={styles.innerContent}>{content}</div>
+        </div>
       )}
       <footer className={styles.footer}>
         <small>
@@ -98,6 +113,27 @@ export function Page({ title, children, sidenavItems, loading = false, shopId })
   );
 }
 
+const Breadcrumbs = ({ breadcrumbs }) => {
+  return (
+    <div className={styles.breadcrumbs}>
+      {breadcrumbs.map((breadcrumb, index) => (
+        <div key={index}>
+          <a
+            href={breadcrumb.href}
+            className={index === breadcrumbs.length - 1 ? styles.active : null}
+          >
+            {breadcrumb.label}
+          </a>
+
+          {index < breadcrumbs.length - 1 ? (
+            <span className={styles.separator}>/</span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const sidenavItems = ({ activePage, shopId }) => {
   const homePath = shopHomePath(shopId);
 
@@ -107,6 +143,12 @@ export const sidenavItems = ({ activePage, shopId }) => {
       label: "Home",
       active: activePage === "home",
       icon: <IconHome size={32} />,
+    },
+    {
+      path: `${homePath}/jobs`,
+      label: "Jobs",
+      active: activePage === "jobs",
+      icon: <IconRobot size={32} />,
     },
     {
       path: `${homePath}/kb`,

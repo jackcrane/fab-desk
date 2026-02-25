@@ -33,7 +33,6 @@
 .contentWrap {
   display: flex;
   flex-direction: row;
-  gap: 24px;
 }
 
 .sidenav {
@@ -94,7 +93,11 @@
   flex: 1;
   position: relative;
   min-height: 90vh;
-  flex-direction: row;
+  flex-direction: column;
+}
+
+.innerContent {
+  padding: 16px;
 }
 
 .loadingState {
@@ -135,4 +138,33 @@
   .footer {
     padding: 12px 16px 16px;
   }
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+  margin-bottom: 8px;
+  flex-direction: row;
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px;
+}
+
+.breadcrumbs a {
+  color: var(--secondary-color-400);
+}
+
+.breadcrumbs a:hover {
+  color: var(--text-color);
+}
+
+.breadcrumbs a.active {
+  color: var(--text-color);
+}
+
+.breadcrumbs .separator {
+  color: var(--secondary-color-400);
+  margin: 0 8px;
+  pointer-events: none;
+  user-select: none;
 }
