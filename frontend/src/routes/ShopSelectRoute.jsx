@@ -1,30 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, Hatch, Input } from "@jackcrane/ui";
+import { Button, Card, Hatch } from "@jackcrane/ui";
 import { authClient } from "../auth-client";
-import { Flex } from "../components/flex";
 import { Page } from "../components/page";
+import { DitherMeshGradientFill } from "../components/dither/dither";
 import {
   clearActiveShopId,
   getActiveShopId,
   setActiveShopId,
 } from "../lib/active-shop";
-import { createShop, listShops } from "../lib/shop-api";
+import { listShops } from "../lib/shop-api";
 import style from "./ShopSelectRoute.module.css";
-
-function normalizeField(value) {
-  return value.trim();
-}
+import { Flex } from "../components/flex";
 
 export function ShopSelectRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
   const [shops, setShops] = useState([]);
   const [isLoadingShops, setIsLoadingShops] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [name, setName] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [primaryContactEmail, setPrimaryContactEmail] = useState("");
-  const [formError, setFormError] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
 
   const activeShopId = getActiveShopId();
 
@@ -66,37 +58,21 @@ export function ShopSelectRoute({ navigate }) {
     navigate("/app", true);
   };
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
-    setFormError("");
-    setIsCreating(true);
-
-    const payload = {
-      name: normalizeField(name),
-      organization: normalizeField(organization),
-      primaryContactEmail: normalizeField(primaryContactEmail),
-    };
-
-    try {
-      const createdShop = await createShop(payload);
-      setShops((previousShops) => [...previousShops, createdShop]);
-      setName("");
-      setOrganization("");
-      setPrimaryContactEmail("");
-      setActiveShopId(createdShop.id);
-      navigate("/app", true);
-    } catch (error) {
-      setFormError(error?.message ?? "Unable to create shop");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   return (
     <Page title="Select Shop">
+      <DitherMeshGradientFill />
       <main className={style.main}>
-        <section className={style.shell}>
-          <Card title="Choose a shop">
+        <div className={style.dither}></div>
+        <div className={style.cardWrap}>
+          <Card
+            title="Select Shop"
+            footer={
+              <Button type="button" onClick={() => {}}>
+                Create a new shop
+              </Button>
+            }
+            footerHeight={40}
+          >
             <div className={style.panel}>
               <p className={style.kicker}>
                 Your account can access multiple shops. Pick one to continue.
@@ -111,30 +87,24 @@ export function ShopSelectRoute({ navigate }) {
                 <>
                   {shops.length === 0 ? (
                     <Hatch variant="warning" footerHeight={12}>
-                      You do not belong to any shops yet. Create one below.
+                      You do not belong to any shops yet.
                     </Hatch>
                   ) : (
                     <ul className={style.shopList}>
                       {shops.map((shop) => (
-                        <li className={style.shopItem} key={shop.id}>
-                          <div>
+                        <Button
+                          key={shop.id}
+                          type="button"
+                          onClick={() => onSelectShop(shop.id)}
+                          style={{
+                            alignItems: "flex-end",
+                          }}
+                        >
+                          <Flex className={style.shopItem} align={"flex-start"}>
                             <h3>{shop.name}</h3>
                             <p>{shop.organization}</p>
-                            <small>
-                              Role: {shop.role} | Primary contact:{" "}
-                              {shop.primaryContactEmail}
-                            </small>
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={() => onSelectShop(shop.id)}
-                            variant="primary"
-                          >
-                            {activeShopId === shop.id
-                              ? "Continue"
-                              : "Enter shop"}
-                          </Button>
-                        </li>
+                          </Flex>
+                        </Button>
                       ))}
                     </ul>
                   )}
@@ -142,53 +112,7 @@ export function ShopSelectRoute({ navigate }) {
               ) : null}
             </div>
           </Card>
-          <Card title="Create a new shop">
-            <div className={style.form}>
-              <form onSubmit={onSubmit}>
-                <Flex gap={2}>
-                  <Input
-                    type="text"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                    label="Shop name"
-                    placeholder="Downtown Fab Shop"
-                  />
-                  <Input
-                    type="text"
-                    value={organization}
-                    onChange={(event) => setOrganization(event.target.value)}
-                    required
-                    label="Organization"
-                    placeholder="Crane Manufacturing Group"
-                  />
-                  <Input
-                    type="email"
-                    value={primaryContactEmail}
-                    onChange={(event) =>
-                      setPrimaryContactEmail(event.target.value)
-                    }
-                    label="Primary contact email (optional)"
-                    placeholder="ops@example.com"
-                  />
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={isCreating}
-                    loading={isCreating}
-                  >
-                    {isCreating ? "Creating..." : "Create shop"}
-                  </Button>
-                  {formError ? (
-                    <Hatch variant="danger" footerHeight={12}>
-                      {formError}
-                    </Hatch>
-                  ) : null}
-                </Flex>
-              </form>
-            </div>
-          </Card>
-        </section>
+        </div>
       </main>
     </Page>
   );
