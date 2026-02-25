@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authClient } from "../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
 import { Flex } from "../components/flex";
@@ -6,11 +6,22 @@ import { DitherMeshGradientFill } from "../components/dither/dither";
 import style from "./SignUpRoute.module.css";
 
 export function SignUpRoute({ navigate }) {
+  const { data: session, isPending } = authClient.useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isPending && session) {
+      navigate("/app", true);
+    }
+  }, [isPending, navigate, session]);
+
+  if (isPending || session) {
+    return null;
+  }
 
   const onSubmit = async (event) => {
     event.preventDefault();

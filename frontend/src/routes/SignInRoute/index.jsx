@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authClient } from "../../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
 import style from "./SignInRoute.module.css";
@@ -8,10 +8,21 @@ import DitherMeshGradient, {
 } from "../../components/dither/dither";
 
 export function SignInRoute({ navigate }) {
+  const { data: session, isPending } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isPending && session) {
+      navigate("/app", true);
+    }
+  }, [isPending, navigate, session]);
+
+  if (isPending || session) {
+    return null;
+  }
 
   const onSubmit = async (event) => {
     event.preventDefault();
