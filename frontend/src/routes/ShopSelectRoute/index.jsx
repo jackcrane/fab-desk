@@ -3,10 +3,7 @@ import { Button, Card, Hatch, Input, useModal } from "@jackcrane/ui";
 import { authClient } from "../../auth-client";
 import { Page } from "../../components/page";
 import { DitherMeshGradientFill } from "../../components/dither/dither";
-import {
-  clearActiveShopId,
-  setActiveShopId,
-} from "../../lib/active-shop";
+import { clearActiveShopId, setActiveShopId } from "../../lib/active-shop";
 import { createShop, listShops } from "../../lib/shop-api";
 import style from "./ShopSelectRoute.module.css";
 import { Flex } from "../../components/flex";
@@ -109,7 +106,7 @@ export function ShopSelectRoute({ navigate }) {
             onChange={(event) => setOrganization(event.target.value)}
             required
             label="Organization"
-            placeholder="Crane Manufacturing Group"
+            placeholder="Manufacturing Co"
           />
           <Input
             type="email"
@@ -118,7 +115,12 @@ export function ShopSelectRoute({ navigate }) {
             label="Primary contact email (optional)"
             placeholder="ops@example.com"
           />
-          <Button type="submit" variant="primary" disabled={isCreating} loading={isCreating}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isCreating}
+            loading={isCreating}
+          >
             {isCreating ? "Creating..." : "Create shop"}
           </Button>
           {createError ? (

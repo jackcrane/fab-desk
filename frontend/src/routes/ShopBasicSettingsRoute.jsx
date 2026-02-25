@@ -1,5 +1,7 @@
+import { Button, Input } from "@jackcrane/ui";
 import { Page, sidenavItems } from "../components/page";
 import { useShopRoute } from "./useShopRoute";
+import { Flex } from "../components/flex";
 
 export function ShopBasicSettingsRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading } = useShopRoute({
@@ -43,9 +45,19 @@ export function ShopBasicSettingsRoute({ navigate, shopId }) {
         },
       ]}
     >
-      <main>
-        <h1>Basic Settings</h1>
-        <p>This page is intentionally empty.</p>
+      <main style={{ maxWidth: 500 }}>
+        <h3>Shop Branding Settings</h3>
+        <p style={{ marginBottom: 16 }}>
+          Configure your shop's basic branding settings.
+        </p>
+        <Flex gap={2}>
+          <Input label="Shop Name" placeholder="Downtown Fab Shop" />
+          <Input label="Organization" placeholder="Manufacturing Co" />
+          <Input label="Primary Contact Email" placeholder="ops@example.com" />
+          <Button type="button" variant="primary" disabled>
+            Save
+          </Button>
+        </Flex>
       </main>
     </Page>
   );

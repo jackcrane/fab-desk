@@ -53,7 +53,7 @@ export function ShopSettingsRoute({ navigate, shopId }) {
               flex: 1,
             }}
           >
-            <p style={{ marginTop: 0 }}>
+            <p style={{ marginBottom: 8 }}>
               Set basic settings for your shop, including name, description, and
               contact information.
             </p>
@@ -77,7 +77,7 @@ export function ShopSettingsRoute({ navigate, shopId }) {
               flex: 1,
             }}
           >
-            <p style={{ marginTop: 0 }}>
+            <p style={{ marginBottom: 8 }}>
               Set requirements for how users can access your shop, including
               single sign-on settings.
             </p>
@@ -92,7 +92,7 @@ export function ShopSettingsRoute({ navigate, shopId }) {
               flex: 1,
             }}
           >
-            <p style={{ marginTop: 0 }}>
+            <p style={{ marginBottom: 8 }}>
               Configure what tabs are visible to shop visitors.
             </p>
             <Button type="button">Go</Button>
