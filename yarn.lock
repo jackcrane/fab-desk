@@ -395,10 +395,10 @@
   resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.9.tgz"
   integrity sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==
 
-"@jackcrane/ui@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.npmjs.org/@jackcrane/ui/-/ui-0.1.11.tgz#15cb3dbb39adfb2ca35ceaf4338b33a1dafd53f8"
-  integrity sha512-cKyuGhrv09jC/ee2JvIGuSmbnZUkgnBsdPmjaakHTFZov9eOPSwL0xQR/s6ok1kqptWBNYLKPySMUCkpwhQKrQ==
+"@jackcrane/ui@^0.1.13":
+  version "0.1.13"
+  resolved "https://registry.npmjs.org/@jackcrane/ui/-/ui-0.1.13.tgz#71a726a5db2fa7fea1814e303664b8f3e38c6e01"
+  integrity sha512-fq2tNrdeVyRIDoBPuGuJIcOJYci1sUNUvjcwIVaUtJZO7YmcJpGflqYJpwpB3HeVyga1AZi7RZHqjTdtfGJiMg==
   dependencies:
     "@observablehq/plot" "^0.6.17"
     "@radix-ui/react-checkbox" "^1.3.3"

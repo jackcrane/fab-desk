@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, Hatch, useModal } from "@jackcrane/ui";
+import { Button, Card, Hatch, Input, useModal } from "@jackcrane/ui";
 import { authClient } from "../auth-client";
 import { Page } from "../components/page";
 import { DitherMeshGradientFill } from "../components/dither/dither";
@@ -8,7 +8,7 @@ import {
   getActiveShopId,
   setActiveShopId,
 } from "../lib/active-shop";
-import { listShops } from "../lib/shop-api";
+import { createShop, listShops } from "../lib/shop-api";
 import style from "./ShopSelectRoute.module.css";
 import { Flex } from "../components/flex";
 
@@ -17,6 +17,11 @@ export function ShopSelectRoute({ navigate }) {
   const [shops, setShops] = useState([]);
   const [isLoadingShops, setIsLoadingShops] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [primaryContactEmail, setPrimaryContactEmail] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const activeShopId = getActiveShopId();
 
@@ -49,10 +54,80 @@ export function ShopSelectRoute({ navigate }) {
     loadShops();
   }, [isPending, loadShops, session]);
 
+  const onCreateShop = async (event) => {
+    event.preventDefault();
+    setCreateError("");
+
+    const normalizedName = shopName.trim();
+    const normalizedOrganization = organization.trim();
+    const normalizedPrimaryContactEmail = primaryContactEmail.trim();
+
+    if (!normalizedName || !normalizedOrganization) {
+      setCreateError("Shop name and organization are required");
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const createdShop = await createShop({
+        name: normalizedName,
+        organization: normalizedOrganization,
+        primaryContactEmail: normalizedPrimaryContactEmail,
+      });
+
+      setShops((previousShops) => [...previousShops, createdShop]);
+      setShopName("");
+      setOrganization("");
+      setPrimaryContactEmail("");
+      setActiveShopId(createdShop.id);
+      navigate("/app", true);
+    } catch (error) {
+      setCreateError(error?.message ?? "Unable to create shop");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const { Modal, setOpen } = useModal({
     title: "Create a new shop",
-    content: <p>This is the modal content</p>,
-    footer: <Button variant="primary">Create shop</Button>,
+    content: (
+      <form onSubmit={onCreateShop} className={style.modalForm}>
+        <Flex gap={2}>
+          <Input
+            type="text"
+            value={shopName}
+            onChange={(event) => setShopName(event.target.value)}
+            required
+            label="Shop name"
+            placeholder="Downtown Fab Shop"
+          />
+          <Input
+            type="text"
+            value={organization}
+            onChange={(event) => setOrganization(event.target.value)}
+            required
+            label="Organization"
+            placeholder="Crane Manufacturing Group"
+          />
+          <Input
+            type="email"
+            value={primaryContactEmail}
+            onChange={(event) => setPrimaryContactEmail(event.target.value)}
+            label="Primary contact email (optional)"
+            placeholder="ops@example.com"
+          />
+          <Button type="submit" variant="primary" disabled={isCreating} loading={isCreating}>
+            {isCreating ? "Creating..." : "Create shop"}
+          </Button>
+          {createError ? (
+            <Hatch variant="danger" footerHeight={12}>
+              {createError}
+            </Hatch>
+          ) : null}
+        </Flex>
+      </form>
+    ),
   });
 
   if (isPending || (!session && !isPending)) {

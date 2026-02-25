@@ -31,6 +31,10 @@
   margin: 4px 0 2px;
 }
 
+.modalForm {
+  width: 100%;
+}
+
 @media (max-width: 640px) {
   .main {
     margin-top: 24px;
