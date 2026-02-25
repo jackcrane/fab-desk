@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { authClient } from "../auth-client";
+import { authClient } from "../../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
-import { Flex } from "../components/flex";
-import { Page } from "../components/page";
-import { DitherMeshGradientFill } from "../components/dither/dither";
+import { Flex } from "../../components/flex";
+import { Page } from "../../components/page";
+import { DitherMeshGradientFill } from "../../components/dither/dither";
 import style from "./SignUpRoute.module.css";
 
 export function SignUpRoute({ navigate }) {

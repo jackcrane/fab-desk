@@ -7,7 +7,7 @@ import {
 } from "../lib/active-shop";
 import { listShops } from "../lib/shop-api";
 
-export function useProtectedShopRoute({ navigate, shopId }) {
+export function useShopRoute({ navigate, shopId }) {
   const { data: session, isPending } = authClient.useSession();
   const [activeShop, setActiveShop] = useState(null);
   const [isCheckingShop, setIsCheckingShop] = useState(true);

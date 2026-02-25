@@ -1,9 +1,9 @@
 import { Page, sidenavItems } from "../components/page";
-import { useProtectedShopRoute } from "./useProtectedShopRoute";
+import { useShopRoute } from "./useShopRoute";
 
-export function ProtectedShopHomeRoute({ navigate, shopId }) {
+export function ShopKbRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading, isSigningOut, onSignOut } =
-    useProtectedShopRoute({
+    useShopRoute({
       navigate,
       shopId,
     });
@@ -18,11 +18,11 @@ export function ProtectedShopHomeRoute({ navigate, shopId }) {
 
   return (
     <Page
-      title={activeShop.name}
+      title="Knowledge Base"
       shopId={activeShop.id}
       loading={isLoading}
       sidenavItems={sidenavItems({
-        activePage: "home",
+        activePage: "kb",
         shopId: activeShop.id,
       })}
       breadcrumbs={[
@@ -34,11 +34,15 @@ export function ProtectedShopHomeRoute({ navigate, shopId }) {
           label: activeShop.name,
           href: "/shop/" + activeShop.id,
         },
+        {
+          label: "Knowledge Base",
+          href: "/shop/" + activeShop.id + "/kb",
+        },
       ]}
     >
       <main>
-        <h1>Hello world</h1>
-        <p>Protected route: /shop/:shopId</p>
+        <h1>Knowledge Base</h1>
+        <p>Route: /shop/:shopId/kb</p>
         <p>Current shop: {activeShop.name}</p>
         <p>Organization: {activeShop.organization}</p>
         <p>Your role: {activeShop.role}</p>

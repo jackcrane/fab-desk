@@ -2,15 +2,26 @@ import { usePathname } from "./hooks/usePathname";
 import { HomeRoute } from "./routes/HomeRoute";
 import { SignInRoute } from "./routes/SignInRoute/index";
 import { SignUpRoute } from "./routes/SignUpRoute";
-import { ProtectedShopHomeRoute } from "./routes/ProtectedShopHomeRoute";
-import { ProtectedShopKbRoute } from "./routes/ProtectedShopKbRoute";
-import { ProtectedShopSettingsRoute } from "./routes/ProtectedShopSettingsRoute";
+import { ShopHomeRoute } from "./routes/ShopHomeRoute";
+import { ShopKbRoute } from "./routes/ShopKbRoute";
+import { ShopSettingsRoute } from "./routes/ShopSettingsRoute";
+import { ShopBasicSettingsRoute } from "./routes/ShopBasicSettingsRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute";
 import { ShopSelectRoute } from "./routes/ShopSelectRoute";
 
 function parseShopRoute(pathname) {
   const normalizedPath =
     pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+  const basicSettingsMatch = normalizedPath.match(
+    /^\/shop\/([^/]+)\/settings\/basic$/,
+  );
+  if (basicSettingsMatch) {
+    return {
+      shopId: decodeURIComponent(basicSettingsMatch[1]),
+      page: "settings-basic",
+    };
+  }
 
   const kbMatch = normalizedPath.match(/^\/shop\/([^/]+)\/kb$/);
   if (kbMatch) {
@@ -49,23 +60,20 @@ export default function App() {
 
   const shopRoute = parseShopRoute(pathname);
   if (shopRoute?.page === "home") {
-    return (
-      <ProtectedShopHomeRoute navigate={navigate} shopId={shopRoute.shopId} />
-    );
+    return <ShopHomeRoute navigate={navigate} shopId={shopRoute.shopId} />;
   }
 
   if (shopRoute?.page === "kb") {
-    return (
-      <ProtectedShopKbRoute navigate={navigate} shopId={shopRoute.shopId} />
-    );
+    return <ShopKbRoute navigate={navigate} shopId={shopRoute.shopId} />;
   }
 
   if (shopRoute?.page === "settings") {
+    return <ShopSettingsRoute navigate={navigate} shopId={shopRoute.shopId} />;
+  }
+
+  if (shopRoute?.page === "settings-basic") {
     return (
-      <ProtectedShopSettingsRoute
-        navigate={navigate}
-        shopId={shopRoute.shopId}
-      />
+      <ShopBasicSettingsRoute navigate={navigate} shopId={shopRoute.shopId} />
     );
   }
 

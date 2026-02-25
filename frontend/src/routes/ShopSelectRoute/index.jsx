@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Hatch, Input, useModal } from "@jackcrane/ui";
-import { authClient } from "../auth-client";
-import { Page } from "../components/page";
-import { DitherMeshGradientFill } from "../components/dither/dither";
+import { authClient } from "../../auth-client";
+import { Page } from "../../components/page";
+import { DitherMeshGradientFill } from "../../components/dither/dither";
 import {
   clearActiveShopId,
   setActiveShopId,
-} from "../lib/active-shop";
-import { createShop, listShops } from "../lib/shop-api";
+} from "../../lib/active-shop";
+import { createShop, listShops } from "../../lib/shop-api";
 import style from "./ShopSelectRoute.module.css";
-import { Flex } from "../components/flex";
+import { Flex } from "../../components/flex";
 
 function shopPath(shopId) {
   return `/shop/${encodeURIComponent(shopId)}`;

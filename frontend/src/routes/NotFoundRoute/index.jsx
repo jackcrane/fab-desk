@@ -1,6 +1,6 @@
 import { Button, Card } from "@jackcrane/ui";
-import { DitherMeshGradientFill } from "../components/dither/dither";
-import { Page } from "../components/page";
+import { DitherMeshGradientFill } from "../../components/dither/dither";
+import { Page } from "../../components/page";
 import style from "./NotFoundRoute.module.css";
 
 export function NotFoundRoute({ navigate }) {

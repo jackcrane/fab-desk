@@ -1,11 +1,11 @@
 import { Page, sidenavItems } from "../components/page";
-import { useProtectedShopRoute } from "./useProtectedShopRoute";
+import { useShopRoute } from "./useShopRoute";
 import { Flex } from "../components/flex";
 import { Button, Card } from "@jackcrane/ui";
 
-export function ProtectedShopSettingsRoute({ navigate, shopId }) {
+export function ShopSettingsRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading, isSigningOut, onSignOut } =
-    useProtectedShopRoute({
+    useShopRoute({
       navigate,
       shopId,
     });
@@ -57,7 +57,16 @@ export function ProtectedShopSettingsRoute({ navigate, shopId }) {
               Set basic settings for your shop, including name, description, and
               contact information.
             </p>
-            <Button type="button">Go</Button>
+            <Button
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/shop/${encodeURIComponent(activeShop.id)}/settings/basic`,
+                )
+              }
+            >
+              Go
+            </Button>
           </Card>
           <Card
             title="Authentication & Access"
