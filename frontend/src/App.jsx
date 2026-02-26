@@ -8,6 +8,7 @@ import { ShopHomeRoute } from "./routes/ShopHomeRoute";
 import { ShopKbRoute } from "./routes/ShopKbRoute";
 import { ShopSettingsRoute } from "./routes/ShopSettingsRoute";
 import { ShopBasicSettingsRoute } from "./routes/ShopBasicSettingsRoute";
+import { ShopAccessSettingsRoute } from "./routes/ShopAccessSettingsRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute/index";
 import { ShopSelectRoute } from "./routes/ShopSelectRoute/index";
 
@@ -71,6 +72,12 @@ function ShopBasicSettingsRoutePage() {
   return <ShopBasicSettingsRoute navigate={navigate} shopId={shopId} />;
 }
 
+function ShopAccessSettingsRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopAccessSettingsRoute navigate={navigate} shopId={shopId} />;
+}
+
 function NotFoundRoutePage() {
   const navigate = useLegacyNavigate();
   return <NotFoundRoute navigate={navigate} />;
@@ -90,6 +97,10 @@ export default function App() {
       <Route
         path="/shop/:shopId/settings/basic"
         element={<ShopBasicSettingsRoutePage />}
+      />
+      <Route
+        path="/shop/:shopId/settings/access"
+        element={<ShopAccessSettingsRoutePage />}
       />
       <Route path="*" element={<NotFoundRoutePage />} />
     </Routes>

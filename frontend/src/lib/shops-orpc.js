@@ -44,3 +44,19 @@ export function useUpdateShopBasicSettingsMutation(options = {}) {
     },
   );
 }
+
+export function useUpdateShopAccessSettingsMutation(options = {}) {
+  const { onSuccess, ...restOptions } = options;
+
+  return useSWRMutation(
+    orpc.shop.updateAccessSettings.key(),
+    orpc.shop.updateAccessSettings.mutator(),
+    {
+      ...restOptions,
+      onSuccess: (data, key, config) => {
+        void revalidateShopQueries();
+        onSuccess?.(data, key, config);
+      },
+    },
+  );
+}

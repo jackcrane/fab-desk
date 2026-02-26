@@ -84,7 +84,16 @@ export function ShopSettingsRoute({ navigate, shopId }) {
                 Set requirements for how users can access your shop, including
                 single sign-on settings.
               </p>
-              <Button type="button">Go</Button>
+              <Button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/shop/${encodeURIComponent(activeShop.id)}/settings/access`,
+                  )
+                }
+              >
+                Go
+              </Button>
             </Card>
             <Card
               title="Tools & Tabs"

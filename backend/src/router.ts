@@ -4,8 +4,11 @@ import {
   createShopForUser,
   createShopInputSchema,
   listShopsForUser,
+  ShopAccessDomainUnavailableError,
   ShopEditForbiddenError,
   ShopNotFoundForUserError,
+  updateShopAccessSettingsForUser,
+  updateShopAccessSettingsInputSchema,
   updateShopBasicSettingsForUser,
   updateShopBasicSettingsInputSchema,
 } from './shops';
@@ -43,6 +46,9 @@ const protectedProcedure = os.$context<RouterContext>().use(({ context, next }) 
 const updateShopBasicSettingsProcedureInputSchema = updateShopBasicSettingsInputSchema.extend({
   shopId: z.string().trim().min(1),
 });
+const updateShopAccessSettingsProcedureInputSchema = updateShopAccessSettingsInputSchema.extend({
+  shopId: z.string().trim().min(1),
+});
 
 const list = protectedProcedure.handler(async ({ context }) => {
   return listShopsForUser(context.userId);
@@ -74,6 +80,42 @@ const updateBasicSettings = protectedProcedure
         });
       }
 
+      if (error instanceof ShopAccessDomainUnavailableError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
+const updateAccessSettings = protectedProcedure
+  .input(updateShopAccessSettingsProcedureInputSchema)
+  .handler(async ({ context, input }) => {
+    const { shopId, ...settings } = input;
+
+    try {
+      return await updateShopAccessSettingsForUser(context.userId, shopId, settings);
+    } catch (error) {
+      if (error instanceof ShopNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+
+      if (error instanceof ShopEditForbiddenError) {
+        throw new ORPCError('FORBIDDEN', {
+          message: error.message,
+        });
+      }
+
+      if (error instanceof ShopAccessDomainUnavailableError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
       throw error;
     }
   });
@@ -83,6 +125,7 @@ export const router = {
     list,
     create,
     updateBasicSettings,
+    updateAccessSettings,
   },
 };
 

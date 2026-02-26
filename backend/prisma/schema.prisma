@@ -103,6 +103,8 @@ model Shop {
   name                String
   organization        String
   primaryContactEmail String?
+  membershipPolicy    String       @default("invite-only")
+  membershipEmailDomain String?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
   createdById         String

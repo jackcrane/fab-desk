@@ -80,7 +80,6 @@ export function ShopSelectRoute({ navigate }) {
         organization: normalizedOrganization,
         primaryContactEmail: normalizedPrimaryContactEmail,
         membershipPolicy,
-        membershipEmailDomain: membershipPolicy === "domain" ? emailDomain : "",
       });
 
       setShopName("");
@@ -138,7 +137,10 @@ export function ShopSelectRoute({ navigate }) {
             <RadioGroup
               className={style.accessPolicyOptions}
               value={membershipPolicy}
-              onValueChange={setMembershipPolicy}
+              onValueChange={(value) => {
+                setMembershipPolicy(value);
+                setCreateError("");
+              }}
               aria-labelledby="shop-join-policy-label"
             >
               <Radio value="invite-only" label="Only people I invite" variant="secondary" />
