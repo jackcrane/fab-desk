@@ -24,6 +24,7 @@ export function ShopSettingsRoute({ navigate, shopId }) {
       sidenavItems={sidenavItems({
         activePage: "settings",
         shopId: pageShopId,
+        showSettings: activeShop?.role === "ADMIN",
       })}
       breadcrumbs={
         activeShop

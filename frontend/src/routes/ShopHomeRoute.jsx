@@ -22,6 +22,7 @@ export function ShopHomeRoute({ navigate, shopId }) {
       sidenavItems={sidenavItems({
         activePage: "home",
         shopId: pageShopId,
+        showSettings: activeShop?.role === "ADMIN",
       })}
       breadcrumbs={
         activeShop

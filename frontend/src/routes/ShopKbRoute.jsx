@@ -22,6 +22,7 @@ export function ShopKbRoute({ navigate, shopId }) {
       sidenavItems={sidenavItems({
         activePage: "kb",
         shopId: pageShopId,
+        showSettings: activeShop?.role === "ADMIN",
       })}
       breadcrumbs={
         activeShop

@@ -84,6 +84,7 @@ export function ShopAccessSettingsRoute({ navigate, shopId }) {
         sidenavItems={sidenavItems({
           activePage: "settings",
           shopId,
+          showSettings: false,
         })}
       />
     );
@@ -98,6 +99,7 @@ export function ShopAccessSettingsRoute({ navigate, shopId }) {
       sidenavItems={sidenavItems({
         activePage: "settings",
         shopId: activeShop.id,
+        showSettings: activeShop.role === "ADMIN",
       })}
       breadcrumbs={[
         {

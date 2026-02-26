@@ -89,7 +89,9 @@ export function Page({
                   key={`grow-${index}`}
                   style={{
                     flex: 1,
-                    borderBottom: "1px solid var(--border-color)",
+                    borderBottom: item.noBorderBottom
+                      ? "none"
+                      : "1px solid var(--border-color)",
                   }}
                 />
               ) : (
@@ -180,10 +182,10 @@ const Breadcrumbs = ({ breadcrumbs }) => {
   );
 };
 
-export const sidenavItems = ({ activePage, shopId }) => {
+export const sidenavItems = ({ activePage, shopId, showSettings = true }) => {
   const homePath = shopHomePath(shopId);
 
-  return [
+  const items = [
     {
       path: homePath,
       label: "Home",
@@ -204,13 +206,19 @@ export const sidenavItems = ({ activePage, shopId }) => {
     },
     {
       type: "grow",
+      noBorderBottom: !showSettings,
     },
-    {
+  ];
+
+  if (showSettings) {
+    items.push({
       path: `${homePath}/settings`,
       label: "Shop Settings",
       active: activePage === "settings",
       icon: <IconSettings size={32} strokeWidth={1.5} />,
       noBorderBottom: true,
-    },
-  ];
+    });
+  }
+
+  return items;
 };
