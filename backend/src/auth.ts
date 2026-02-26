@@ -143,33 +143,6 @@ const trustedSsoProviderIdsFromConfig = defaultSsoProviders
   .filter((providerId): providerId is string => typeof providerId === 'string' && providerId.trim().length > 0);
 const trustedSsoProviderIdsFromEnv = parseCsvValues(process.env.BETTER_AUTH_TRUSTED_SSO_PROVIDER_IDS);
 const trustedSsoProviderIds = [...new Set([...trustedSsoProviderIdsFromConfig, ...trustedSsoProviderIdsFromEnv])];
-const authDebugEnabled =
-  String(process.env.AUTH_DEBUG_LOGS ?? process.env.NODE_ENV !== 'production')
-    .trim()
-    .toLowerCase() !== 'false';
-
-if (authDebugEnabled) {
-  console.log('[auth-debug] better-auth bootstrap', {
-    baseURL: authPublicUrl,
-    frontendOrigins,
-    authOrigin,
-    hasCrossOriginFrontend,
-    skipStateCookieCheck,
-    enableCrossSiteCookies,
-    trustedSsoProviderIds,
-    defaultSsoProviderCount: defaultSsoProviders.length,
-    defaultSsoProviders: defaultSsoProviders.map((provider) => ({
-      providerId: provider.providerId,
-      domain: provider.domain,
-      entryPointBinding: provider.samlConfig?.entryPointBinding ?? 'redirect',
-      callbackUrl: provider.samlConfig?.callbackUrl ?? null,
-      issuer: provider.samlConfig?.issuer ?? null,
-      entryPoint: provider.samlConfig?.entryPoint ?? null,
-      authnRequestsSigned: provider.samlConfig?.authnRequestsSigned ?? false,
-      wantAssertionsSigned: provider.samlConfig?.wantAssertionsSigned ?? true,
-    })),
-  });
-}
 
 export const auth = betterAuth({
   baseURL: authPublicUrl,

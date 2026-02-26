@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { createHash, randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { inflateRawSync } from 'node:zlib';
 import { onError } from '@orpc/server';
@@ -51,155 +50,6 @@ const frontendDevProxyEnabled =
   String(process.env.FRONTEND_DEV_PROXY_ENABLED ?? process.env.NODE_ENV !== 'production')
     .trim()
     .toLowerCase() !== 'false';
-const authDebugEnabled =
-  String(process.env.AUTH_DEBUG_LOGS ?? process.env.NODE_ENV !== 'production')
-    .trim()
-    .toLowerCase() !== 'false';
-
-type SessionLookupMeta = {
-  requestId: string;
-  pathname: string;
-  method: string;
-  source: 'rpc' | 'shops';
-};
-
-function getHeaderStringValue(value: string | string[] | undefined): string | null {
-  if (typeof value === 'string') {
-    const trimmedValue = value.trim();
-    return trimmedValue.length > 0 ? trimmedValue : null;
-  }
-
-  if (Array.isArray(value)) {
-    const firstValue = value.find((entry) => entry.trim().length > 0);
-    return firstValue ? firstValue.trim() : null;
-  }
-
-  return null;
-}
-
-function summarizeQueryForLogs(searchParams: URLSearchParams): Record<string, unknown> {
-  const entries = Array.from(searchParams.entries());
-  if (entries.length === 0) {
-    return { keys: [] };
-  }
-
-  return {
-    keys: entries.map(([key]) => key),
-    values: Object.fromEntries(
-      entries.map(([key, value]) => {
-        if (/saml/i.test(key) || /signature/i.test(key) || /relaystate/i.test(key)) {
-          return [key, `<redacted:${value.length}>`];
-        }
-
-        return [key, truncateForLog(value, 80)];
-      }),
-    ),
-  };
-}
-
-function sanitizeEmailForLog(email: unknown): string | null {
-  if (typeof email !== 'string') {
-    return null;
-  }
-
-  const trimmedEmail = email.trim().toLowerCase();
-  if (!trimmedEmail.includes('@')) {
-    return null;
-  }
-
-  const [localPart = '', domainPart = ''] = trimmedEmail.split('@');
-  if (!localPart || !domainPart) {
-    return null;
-  }
-
-  if (localPart.length <= 2) {
-    return `**@${domainPart}`;
-  }
-
-  return `${localPart.slice(0, 2)}***@${domainPart}`;
-}
-
-function truncateForLog(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return `${value.slice(0, maxLength)}...<trimmed>`;
-}
-
-function hashValueForLog(value: string): string {
-  return createHash('sha256').update(value).digest('hex').slice(0, 12);
-}
-
-function parseCookieHeader(rawCookieHeader: string | undefined): Record<string, string> {
-  if (!rawCookieHeader) {
-    return {};
-  }
-
-  const cookies: Record<string, string> = {};
-  for (const cookieEntry of rawCookieHeader.split(';')) {
-    const separatorIndex = cookieEntry.indexOf('=');
-    if (separatorIndex <= 0) {
-      continue;
-    }
-
-    const cookieName = cookieEntry.slice(0, separatorIndex).trim();
-    if (!cookieName) {
-      continue;
-    }
-
-    cookies[cookieName] = cookieEntry.slice(separatorIndex + 1).trim();
-  }
-
-  return cookies;
-}
-
-function summarizeCookieHeader(rawCookieHeader: string | undefined): Record<string, unknown> {
-  const parsedCookies = parseCookieHeader(rawCookieHeader);
-  const cookieEntries = Object.entries(parsedCookies);
-  const cookieNames = cookieEntries.map(([name]) => name).sort();
-  const authCookies = cookieEntries
-    .filter(([cookieName]) => /(auth|session|token|csrf|state|sso)/i.test(cookieName))
-    .map(([cookieName, cookieValue]) => ({
-      name: cookieName,
-      fingerprint: hashValueForLog(cookieValue),
-      size: cookieValue.length,
-    }));
-
-  return {
-    count: cookieNames.length,
-    names: cookieNames,
-    authCookies,
-  };
-}
-
-function summarizeSessionForLog(session: unknown): Record<string, unknown> {
-  if (!session || typeof session !== 'object') {
-    return { present: false };
-  }
-
-  const maybeSession = session as {
-    session?: { id?: unknown; expiresAt?: unknown };
-    user?: { id?: unknown; email?: unknown };
-  };
-  const userId = typeof maybeSession.user?.id === 'string' ? maybeSession.user.id : null;
-  const userEmail = sanitizeEmailForLog(maybeSession.user?.email);
-  const sessionId = typeof maybeSession.session?.id === 'string' ? maybeSession.session.id : null;
-  const expiresAt =
-    typeof maybeSession.session?.expiresAt === 'string' || maybeSession.session?.expiresAt instanceof Date
-      ? maybeSession.session.expiresAt
-      : null;
-  const topLevelKeys = Object.keys(session as Record<string, unknown>);
-
-  return {
-    present: true,
-    topLevelKeys,
-    userId,
-    userEmail,
-    sessionId,
-    expiresAt,
-  };
-}
 
 function resolveOrigin(urlOrOrigin: string): string | null {
   try {
@@ -241,47 +91,6 @@ function normalizeSsoRedirectUrlToAuthOrigin(
   }
 
   return { value: normalizedUrl.toString(), normalized: true, reason: null };
-}
-
-function getWebSetCookieNames(headers: Headers): string[] {
-  const getSetCookieHeader = (headers as Headers & { getSetCookie?: () => string[] }).getSetCookie;
-  const setCookies =
-    typeof getSetCookieHeader === 'function'
-      ? getSetCookieHeader.call(headers)
-      : headers.get('set-cookie')
-        ? [headers.get('set-cookie') as string]
-        : [];
-
-  return setCookies
-    .map((cookie) => cookie.split(';')[0]?.split('=')[0]?.trim() ?? '')
-    .filter(Boolean);
-}
-
-function getNodeSetCookieNames(res: ServerResponse): string[] {
-  const setCookieHeader = res.getHeader('set-cookie');
-  if (!setCookieHeader) {
-    return [];
-  }
-
-  const cookieEntries = Array.isArray(setCookieHeader)
-    ? setCookieHeader.map(String)
-    : [String(setCookieHeader)];
-
-  return cookieEntries
-    .map((cookie) => cookie.split(';')[0]?.split('=')[0]?.trim() ?? '')
-    .filter(Boolean);
-}
-
-function authDebugLog(requestId: string, event: string, payload: Record<string, unknown>): void {
-  if (!authDebugEnabled) {
-    return;
-  }
-
-  console.log('[auth-debug]', {
-    requestId,
-    event,
-    ...payload,
-  });
 }
 
 function withAuthCors(req: IncomingMessage, res: ServerResponse, origin: string): void {
@@ -414,36 +223,10 @@ async function maybeProxyToFrontendDev(
   return true;
 }
 
-async function getSession(req: IncomingMessage, meta: SessionLookupMeta) {
-  const cookieSummary = summarizeCookieHeader(getHeaderStringValue(req.headers.cookie) ?? undefined);
-  authDebugLog(meta.requestId, 'session.lookup.start', {
-    source: meta.source,
-    pathname: meta.pathname,
-    method: meta.method,
-    cookieSummary,
+async function getSession(req: IncomingMessage) {
+  return auth.api.getSession({
+    headers: new Headers(req.headers as HeadersInit),
   });
-
-  try {
-    const session = await auth.api.getSession({
-      headers: new Headers(req.headers as HeadersInit),
-    });
-
-    authDebugLog(meta.requestId, 'session.lookup.success', {
-      source: meta.source,
-      pathname: meta.pathname,
-      method: meta.method,
-      sessionSummary: summarizeSessionForLog(session),
-    });
-    return session;
-  } catch (error) {
-    authDebugLog(meta.requestId, 'session.lookup.error', {
-      source: meta.source,
-      pathname: meta.pathname,
-      method: meta.method,
-      errorMessage: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -568,41 +351,9 @@ function applyWebResponseHeaders(sourceHeaders: Headers, res: ServerResponse): v
 const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const pathname = requestUrl.pathname;
-  const requestIdHeader = getHeaderStringValue(req.headers['x-request-id']);
-  const requestId = requestIdHeader ?? randomUUID().slice(0, 12);
-  const method = (req.method ?? 'GET').toUpperCase();
-  res.setHeader('x-request-id', requestId);
-
-  const shouldLogRequest =
-    pathname.startsWith('/api/auth') || pathname.startsWith('/rpc') || pathname.startsWith('/api/shops');
-  const requestStart = Date.now();
-  const requestCookieSummary = summarizeCookieHeader(getHeaderStringValue(req.headers.cookie) ?? undefined);
-
-  if (shouldLogRequest) {
-    authDebugLog(requestId, 'request.start', {
-      method,
-      pathname,
-      query: summarizeQueryForLogs(requestUrl.searchParams),
-      origin: getHeaderStringValue(req.headers.origin),
-      referer: getHeaderStringValue(req.headers.referer),
-      host: getHeaderStringValue(req.headers.host),
-      cookieSummary: requestCookieSummary,
-    });
-
-    res.on('finish', () => {
-      authDebugLog(requestId, 'request.finish', {
-        method,
-        pathname,
-        statusCode: res.statusCode,
-        durationMs: Date.now() - requestStart,
-        location: String(res.getHeader('location') ?? ''),
-        responseSetCookies: getNodeSetCookieNames(res),
-      });
-    });
-  }
 
   const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : null;
-  const requestHost = getHeaderStringValue(req.headers.host);
+  const requestHost = typeof req.headers.host === 'string' ? req.headers.host.trim() : null;
   const authOrigin = resolveOrigin(authPublicUrl);
   const isLocalhostRequestHost = Boolean(requestHost && /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestHost));
 
@@ -643,15 +394,6 @@ const server = createServer(async (req, res) => {
     }
 
     const ssoProvider = findSsoProviderByEmail(email);
-    authDebugLog(requestId, 'auth.check-domain.result', {
-      method,
-      pathname,
-      email: sanitizeEmailForLog(email),
-      domain,
-      requiresSso: Boolean(ssoProvider),
-      providerId: ssoProvider?.providerId ?? null,
-      providerType: ssoProvider?.providerType ?? null,
-    });
 
     sendJson(res, 200, {
       domain,
@@ -702,26 +444,6 @@ const server = createServer(async (req, res) => {
         signInBody.errorCallbackURL = normalizedErrorCallbackUrl.value;
       }
 
-      authDebugLog(requestId, 'auth.sign-in-sso.callback-normalization', {
-        requestHost,
-        authOrigin,
-        originalCallbackURL:
-          typeof (payload as { callbackURL?: unknown }).callbackURL === 'string'
-            ? (payload as { callbackURL: string }).callbackURL
-            : null,
-        effectiveCallbackURL:
-          typeof signInBody.callbackURL === 'string' ? signInBody.callbackURL : null,
-        callbackWasNormalized: normalizedCallbackUrl.normalized,
-        callbackNormalizationReason: normalizedCallbackUrl.reason,
-        originalErrorCallbackURL:
-          typeof (payload as { errorCallbackURL?: unknown }).errorCallbackURL === 'string'
-            ? (payload as { errorCallbackURL: string }).errorCallbackURL
-            : null,
-        effectiveErrorCallbackURL:
-          typeof signInBody.errorCallbackURL === 'string' ? signInBody.errorCallbackURL : null,
-        errorCallbackWasNormalized: normalizedErrorCallbackUrl.normalized,
-        errorCallbackNormalizationReason: normalizedErrorCallbackUrl.reason,
-      });
     }
     const provider =
       payload && typeof payload === 'object'
@@ -741,51 +463,16 @@ const server = createServer(async (req, res) => {
           })
         : null;
     const shouldUsePostBinding = provider?.samlConfig?.entryPointBinding === 'post';
-    authDebugLog(requestId, 'auth.sign-in-sso.request', {
-      method,
-      pathname,
-      providerId:
-        typeof (payload as { providerId?: unknown }).providerId === 'string'
-          ? (payload as { providerId: string }).providerId
-          : null,
-      email: sanitizeEmailForLog((payload as { email?: unknown }).email),
-      domain:
-        typeof (payload as { domain?: unknown }).domain === 'string'
-          ? (payload as { domain: string }).domain
-          : null,
-      callbackURL:
-        typeof signInBody.callbackURL === 'string' ? signInBody.callbackURL : null,
-      errorCallbackURL:
-        typeof signInBody.errorCallbackURL === 'string' ? signInBody.errorCallbackURL : null,
-      resolvedProviderId: provider?.providerId ?? null,
-      entryPointBinding: provider?.samlConfig?.entryPointBinding ?? null,
-      shouldUsePostBinding,
-    });
-
     const authResponse = await auth.api.signInSSO({
       body: signInBody as any,
       headers: new Headers(req.headers as HeadersInit),
       asResponse: true,
     });
     const responseBody = await authResponse.text();
-    authDebugLog(requestId, 'auth.sign-in-sso.response', {
-      statusCode: authResponse.status,
-      ok: authResponse.ok,
-      contentType: authResponse.headers.get('content-type'),
-      location: authResponse.headers.get('location'),
-      responseSetCookies: getWebSetCookieNames(authResponse.headers),
-      responseBodyLength: responseBody.length,
-    });
 
     applyWebResponseHeaders(authResponse.headers, res);
 
     if (!authResponse.ok || !shouldUsePostBinding) {
-      if (!authResponse.ok) {
-        authDebugLog(requestId, 'auth.sign-in-sso.error', {
-          statusCode: authResponse.status,
-          responseBodyPreview: truncateForLog(responseBody, 350),
-        });
-      }
       res.statusCode = authResponse.status;
       res.end(responseBody);
       return;
@@ -795,10 +482,6 @@ const server = createServer(async (req, res) => {
     try {
       parsedResponse = JSON.parse(responseBody);
     } catch {
-      authDebugLog(requestId, 'auth.sign-in-sso.parse-error', {
-        reason: 'Unable to parse Better Auth response as JSON while converting redirect to POST binding',
-        responseBodyPreview: truncateForLog(responseBody, 350),
-      });
       res.statusCode = authResponse.status;
       res.end(responseBody);
       return;
@@ -806,24 +489,10 @@ const server = createServer(async (req, res) => {
 
     const transformedResponse = toSamlPostRedirectPayload(parsedResponse);
     if (!transformedResponse) {
-      authDebugLog(requestId, 'auth.sign-in-sso.transform-skip', {
-        reason: 'Could not transform SAML redirect payload for POST binding',
-      });
       res.statusCode = authResponse.status;
       res.end(responseBody);
       return;
     }
-    let transformedTarget: URL | null = null;
-    try {
-      transformedTarget = new URL(transformedResponse.url);
-    } catch {
-      transformedTarget = null;
-    }
-    authDebugLog(requestId, 'auth.sign-in-sso.transform-success', {
-      targetOrigin: transformedTarget?.origin ?? null,
-      targetPathname: transformedTarget?.pathname ?? null,
-      formDataKeys: Object.keys(transformedResponse.formData ?? {}),
-    });
 
     sendJson(res, authResponse.status, transformedResponse);
     return;
@@ -836,19 +505,7 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    authDebugLog(requestId, 'auth.route.dispatch', {
-      method,
-      pathname,
-      query: summarizeQueryForLogs(requestUrl.searchParams),
-    });
     await authHandler(req, res);
-    authDebugLog(requestId, 'auth.route.complete', {
-      method,
-      pathname,
-      statusCode: res.statusCode,
-      location: String(res.getHeader('location') ?? ''),
-      responseSetCookies: getNodeSetCookieNames(res),
-    });
     return;
   }
 
@@ -859,20 +516,10 @@ const server = createServer(async (req, res) => {
   }
 
   if (pathname === '/api/shops') {
-    const session = await getSession(req, {
-      requestId,
-      pathname,
-      method,
-      source: 'shops',
-    });
+    const session = await getSession(req);
     const userId = getSessionUserId(session);
 
     if (!userId) {
-      authDebugLog(requestId, 'shops.unauthorized', {
-        method,
-        pathname,
-        sessionSummary: summarizeSessionForLog(session),
-      });
       sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
@@ -921,20 +568,10 @@ const server = createServer(async (req, res) => {
   const shopDetailMatch = pathname.match(/^\/api\/shops\/([^/]+)$/);
 
   if (shopDetailMatch) {
-    const session = await getSession(req, {
-      requestId,
-      pathname,
-      method,
-      source: 'shops',
-    });
+    const session = await getSession(req);
     const userId = getSessionUserId(session);
 
     if (!userId) {
-      authDebugLog(requestId, 'shops.detail.unauthorized', {
-        method,
-        pathname,
-        sessionSummary: summarizeSessionForLog(session),
-      });
       sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
@@ -1009,49 +646,18 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const session = await getSession(req, {
-    requestId,
-    pathname,
-    method,
-    source: 'rpc',
-  });
-  const sessionSummary = summarizeSessionForLog(session);
-  authDebugLog(requestId, 'rpc.dispatch', {
-    method,
-    pathname,
-    sessionSummary,
-  });
+  const session = await getSession(req);
 
   const { matched } = await handler.handle(req, res, {
     prefix: '/rpc',
-    context: {
-      session,
-      authDebug: {
-        requestId,
-        method,
-        path: pathname,
-        query: summarizeQueryForLogs(requestUrl.searchParams),
-        cookieSummary: requestCookieSummary,
-        sessionSummary,
-      },
-    },
+    context: { session },
   });
 
   if (!matched) {
-    authDebugLog(requestId, 'rpc.not-matched', {
-      method,
-      pathname,
-    });
     res.statusCode = 404;
     res.end('Not found');
     return;
   }
-
-  authDebugLog(requestId, 'rpc.matched', {
-    method,
-    pathname,
-    statusCode: res.statusCode,
-  });
 });
 
 server.listen(port, () => {
