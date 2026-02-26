@@ -1,0 +1,278 @@
+const rawAuthPublicUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
+
+export const authPublicUrl = rawAuthPublicUrl.replace(/\/+$/, '');
+
+function parseCsv(value) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function parseJsonArray(value) {
+  if (!value || typeof value !== 'string') {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeMultiline(value) {
+  if (!value) {
+    return '';
+  }
+
+  return value.replace(/\\n/g, '\n').trim();
+}
+
+function parseBoolean(value, fallback = false) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'true') {
+    return true;
+  }
+
+  if (normalized === 'false') {
+    return false;
+  }
+
+  return fallback;
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function buildSpMetadataXml({
+  entityId,
+  callbackUrl,
+  authnRequestsSigned,
+  wantAssertionsSigned,
+}) {
+  return [
+    '<?xml version="1.0"?>',
+    `<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${escapeXml(entityId)}">`,
+    `<SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" AuthnRequestsSigned="${authnRequestsSigned ? 'true' : 'false'}" WantAssertionsSigned="${wantAssertionsSigned ? 'true' : 'false'}">`,
+    '<AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" index="1"',
+    `  Location="${escapeXml(callbackUrl)}"/>`,
+    '</SPSSODescriptor>',
+    '</EntityDescriptor>',
+  ].join('');
+}
+
+function domainMatches(searchDomain, domainList) {
+  const normalizedSearchDomain = searchDomain.toLowerCase();
+  return domainList.some(
+    (domain) =>
+      normalizedSearchDomain === domain ||
+      normalizedSearchDomain.endsWith(`.${domain}`),
+  );
+}
+
+function createSamlProvider(config) {
+  const providerId = String(config.providerId ?? '').trim();
+  const domains = parseCsv(config.domains);
+  const callbackUrl =
+    config.callbackUrl ??
+    `${authPublicUrl}/api/auth/sso/saml2/sp/acs/${encodeURIComponent(providerId)}`;
+  const certificate = normalizeMultiline(config.certificate);
+  const spPrivateKey = normalizeMultiline(config.spPrivateKey);
+  const spEntityId =
+    config.spEntityId ??
+    `${authPublicUrl}/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`;
+  const spMetadataXml =
+    config.spMetadataXml ??
+    buildSpMetadataXml({
+      entityId: spEntityId,
+      callbackUrl,
+      authnRequestsSigned: config.authnRequestsSigned,
+      wantAssertionsSigned: config.wantAssertionsSigned,
+    });
+
+  const samlConfig = {
+    issuer: String(config.issuer ?? '').trim(),
+    entryPoint: String(config.entryPoint ?? '').trim(),
+    cert: certificate,
+    callbackUrl,
+    spMetadata: {
+      metadata: spMetadataXml,
+      entityID: spEntityId,
+      ...(spPrivateKey ? { privateKey: spPrivateKey } : {}),
+      ...(config.spPrivateKeyPass ? { privateKeyPass: config.spPrivateKeyPass } : {}),
+    },
+    wantAssertionsSigned: config.wantAssertionsSigned,
+    authnRequestsSigned: config.authnRequestsSigned,
+  };
+
+  const enabled =
+    domains.length > 0 &&
+    Boolean(samlConfig.issuer) &&
+    Boolean(samlConfig.entryPoint) &&
+    Boolean(samlConfig.cert);
+
+  return {
+    providerId,
+    domains,
+    domain: domains.join(','),
+    providerType: 'saml',
+    samlConfig,
+    enabled,
+  };
+}
+
+function normalizeProviderInput(rawProvider) {
+  if (!rawProvider || typeof rawProvider !== 'object') {
+    return null;
+  }
+
+  const providerId =
+    typeof rawProvider.providerId === 'string' ? rawProvider.providerId : '';
+  const domains =
+    Array.isArray(rawProvider.domains)
+      ? rawProvider.domains.join(',')
+      : typeof rawProvider.domains === 'string'
+        ? rawProvider.domains
+        : '';
+  const issuer =
+    typeof rawProvider.issuer === 'string' ? rawProvider.issuer : '';
+  const entryPoint =
+    typeof rawProvider.entryPoint === 'string' ? rawProvider.entryPoint : '';
+  const certificate =
+    typeof rawProvider.cert === 'string' ? rawProvider.cert : '';
+
+  if (!providerId) {
+    return null;
+  }
+
+  return {
+    providerId,
+    domains,
+    issuer,
+    entryPoint,
+    certificate,
+    callbackUrl:
+      typeof rawProvider.callbackUrl === 'string'
+        ? rawProvider.callbackUrl
+        : undefined,
+    spEntityId:
+      typeof rawProvider.spEntityId === 'string'
+        ? rawProvider.spEntityId
+        : undefined,
+    spPrivateKey:
+      typeof rawProvider.spPrivateKey === 'string'
+        ? rawProvider.spPrivateKey
+        : undefined,
+    spPrivateKeyPass:
+      typeof rawProvider.spPrivateKeyPass === 'string'
+        ? rawProvider.spPrivateKeyPass
+        : undefined,
+    spMetadataXml:
+      typeof rawProvider.spMetadataXml === 'string'
+        ? rawProvider.spMetadataXml
+        : undefined,
+    wantAssertionsSigned:
+      typeof rawProvider.wantAssertionsSigned === 'boolean'
+        ? rawProvider.wantAssertionsSigned
+        : true,
+    authnRequestsSigned:
+      typeof rawProvider.authnRequestsSigned === 'boolean'
+        ? rawProvider.authnRequestsSigned
+        : false,
+  };
+}
+
+const providersFromJson = parseJsonArray(process.env.SAML_SSO_PROVIDERS_JSON)
+  .map(normalizeProviderInput)
+  .filter(Boolean);
+
+const singleProviderFallback = normalizeProviderInput({
+  providerId: process.env.SAML_PROVIDER_ID,
+  domains: process.env.SAML_EMAIL_DOMAINS,
+  issuer: process.env.SAML_ISSUER,
+  entryPoint: process.env.SAML_ENTRY_POINT,
+  cert: process.env.SAML_CERT,
+  callbackUrl: process.env.SAML_CALLBACK_URL,
+  spEntityId: process.env.SAML_SP_ENTITY_ID,
+  spPrivateKey: process.env.SAML_SP_PRIVATE_KEY,
+  spPrivateKeyPass: process.env.SAML_SP_PRIVATE_KEY_PASS,
+  wantAssertionsSigned: parseBoolean(process.env.SAML_WANT_ASSERTIONS_SIGNED, true),
+  authnRequestsSigned: parseBoolean(process.env.SAML_AUTHN_REQUESTS_SIGNED, false),
+});
+
+const providerInputs =
+  providersFromJson.length > 0
+    ? providersFromJson
+    : singleProviderFallback
+      ? [singleProviderFallback]
+      : [];
+
+export const samlProviders = providerInputs.map((provider) => createSamlProvider(provider));
+
+export function getDefaultSsoProviders() {
+  return samlProviders
+    .filter((provider) => provider.enabled)
+    .map((provider) => ({
+      domain: provider.domain,
+      providerId: provider.providerId,
+      samlConfig: provider.samlConfig,
+    }));
+}
+
+export function findSsoProviderByDomain(domain) {
+  if (!domain) {
+    return null;
+  }
+
+  const normalizedDomain = domain.trim().toLowerCase();
+
+  if (!normalizedDomain) {
+    return null;
+  }
+
+  const provider =
+    samlProviders
+      .filter((candidate) => candidate.enabled)
+      .find((candidate) => domainMatches(normalizedDomain, candidate.domains)) ?? null;
+
+  if (!provider) {
+    return null;
+  }
+
+  return {
+    providerId: provider.providerId,
+    providerType: provider.providerType,
+    domain: normalizedDomain,
+  };
+}
+
+export function findSsoProviderByEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return null;
+  }
+
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+
+  if (!emailDomain) {
+    return null;
+  }
+
+  return findSsoProviderByDomain(emailDomain);
+}

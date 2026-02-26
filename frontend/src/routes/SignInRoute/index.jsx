@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { authClient, checkDomainForSso } from "../../auth-client";
+import {
+  authClient,
+  checkDomainForSso,
+  signInWithSso,
+} from "../../auth-client";
 import { Button, Card, Hatch, Input } from "@jackcrane/ui";
 import style from "./SignInRoute.module.css";
 import { Flex } from "../../components/flex";
@@ -14,6 +18,7 @@ export function SignInRoute({ navigate }) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
+  const [isStartingSso, setIsStartingSso] = useState(false);
 
   useEffect(() => {
     if (!isPending && session) {
@@ -33,7 +38,19 @@ export function SignInRoute({ navigate }) {
       const result = await checkDomainForSso(email.trim());
 
       if (result.requiresSso) {
-        setError(`Single sign-on is required for ${result.domain}`);
+        setIsStartingSso(true);
+
+        try {
+          await signInWithSso({
+            email: email.trim(),
+            providerId: result.providerId,
+            providerType: result.providerType,
+          });
+        } catch (ssoError) {
+          setError(ssoError instanceof Error ? ssoError.message : "Unable to start SSO sign in");
+          setIsStartingSso(false);
+        }
+
         return;
       }
 
@@ -102,7 +119,7 @@ export function SignInRoute({ navigate }) {
                     required
                     placeholder="you@example.com"
                     label="Email"
-                    disabled={isCheckingDomain || isSubmitting || step === "password"}
+                    disabled={isCheckingDomain || isSubmitting || isStartingSso || step === "password"}
                   />
                   {step === "password" ? (
                     <Input
@@ -130,14 +147,16 @@ export function SignInRoute({ navigate }) {
                     ) : null}
                     <Button
                       type="submit"
-                      disabled={isSubmitting || isCheckingDomain}
+                      disabled={isSubmitting || isCheckingDomain || isStartingSso}
                       variant="primary"
-                      loading={isSubmitting || isCheckingDomain}
+                      loading={isSubmitting || isCheckingDomain || isStartingSso}
                     >
                       {step === "password"
                         ? isSubmitting
                           ? "Signing in..."
                           : "Sign in"
+                        : isStartingSso
+                          ? "Redirecting..."
                         : isCheckingDomain
                           ? "Checking..."
                           : "Continue"}

@@ -6,6 +6,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { prisma } from './db';
 import { router } from './router';
+import { findSsoProviderByEmail } from './saml-config.js';
 import {
   createShopForUser,
   createShopInputSchema,
@@ -16,7 +17,17 @@ import {
   updateShopBasicSettingsInputSchema,
 } from './shops';
 
-const frontendOrigin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
+function parseFrontendOrigins(rawOrigins?: string): string[] {
+  return (rawOrigins ?? 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const frontendOrigins = parseFrontendOrigins(
+  process.env.FRONTEND_ORIGINS ?? process.env.FRONTEND_ORIGIN,
+);
+const frontendOriginSet = new Set(frontendOrigins);
 
 const handler = new RPCHandler(router, {
   interceptors: [
@@ -30,10 +41,10 @@ const authHandler = toNodeHandler(auth);
 
 const port = Number(process.env.PORT ?? 3000);
 
-function withAuthCors(req: IncomingMessage, res: ServerResponse): void {
+function withAuthCors(req: IncomingMessage, res: ServerResponse, origin: string): void {
   const requestedHeaders = req.headers['access-control-request-headers'];
 
-  res.setHeader('Access-Control-Allow-Origin', frontendOrigin);
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -88,8 +99,10 @@ const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const pathname = requestUrl.pathname;
 
-  if (req.headers.origin === frontendOrigin) {
-    withAuthCors(req, res);
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : null;
+
+  if (requestOrigin && frontendOriginSet.has(requestOrigin)) {
+    withAuthCors(req, res, requestOrigin);
   }
 
   if (pathname === '/api/auth/check-domain') {
@@ -124,11 +137,13 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // Mocked for now: every domain proceeds with password auth.
+    const ssoProvider = findSsoProviderByEmail(email);
+
     sendJson(res, 200, {
       domain,
-      requiresSso: false,
-      ssoProvider: null,
+      requiresSso: Boolean(ssoProvider),
+      providerId: ssoProvider?.providerId ?? null,
+      providerType: ssoProvider?.providerType ?? null,
     });
     return;
   }

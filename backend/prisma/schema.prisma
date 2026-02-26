@@ -17,6 +17,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  ssoProviders  SsoProvider[]
   memberships   Membership[]
   createdShops  Shop[]    @relation("ShopCreatedBy")
 }
@@ -59,6 +60,20 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime?
   updatedAt  DateTime?
+}
+
+model SsoProvider {
+  id             String   @id
+  issuer         String
+  oidcConfig     String?
+  samlConfig     String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId     String   @unique
+  organizationId String?
+  domain         String
+  createdAt      DateTime
+  updatedAt      DateTime
 }
 
 model Shop {

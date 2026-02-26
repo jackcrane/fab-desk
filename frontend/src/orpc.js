@@ -2,7 +2,12 @@ import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import { createSWRUtils } from '@orpc/experimental-react-swr';
 
-const url = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/rpc';
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const defaultApiUrl =
+  typeof window === 'undefined'
+    ? 'http://localhost:3000/rpc'
+    : new URL('/rpc', window.location.origin).toString();
+const url = new URL(configuredApiUrl || defaultApiUrl, defaultApiUrl).toString();
 
 const link = new RPCLink({
   url,
