@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import logo from "../../assets/logo.svg";
 import { authClient } from "../../auth-client";
-import { Dropdown, Hatch } from "@jackcrane/ui";
+import { Button, Dropdown, Hatch } from "@jackcrane/ui";
 import { clearActiveShopId } from "../../lib/active-shop";
 import classNames from "classnames";
 import { Link, useNavigate } from "react-router-dom";
 import {
   IconBook,
   IconHome,
+  IconMenu2,
   IconRobot,
   IconSettings,
 } from "@tabler/icons-react";
@@ -36,11 +37,33 @@ export function Page({
 }) {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     document.title = title ? `${title} | ${APP_NAME}` : APP_NAME;
   }, [title]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isMobileMenuOpen]);
 
   const onSignOut = async () => {
     setIsSigningOut(true);
@@ -81,45 +104,15 @@ export function Page({
         ) : null}
       </Hatch>
       {sidenavItems ? (
-        <div className={styles.contentWrap}>
-          <div className={styles.sidenav}>
-            {sidenavItems.map((item, index) =>
-              item.type === "grow" ? (
-                <div
-                  key={`grow-${index}`}
-                  style={{
-                    flex: 1,
-                    borderBottom: item.noBorderBottom
-                      ? "none"
-                      : "1px solid var(--border-color)",
-                  }}
-                />
-              ) : (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={
-                    item.active ? classNames(styles.active, "jcui_hatch") : null
-                  }
-                  style={{
-                    borderBottom: item.noBorderBottom
-                      ? "none"
-                      : "1px solid var(--border-color)",
-                  }}
-                >
-                  {item.icon}
-                  <div className={classNames(styles.label)}>{item.label}</div>
-                </Link>
-              ),
-            )}
-          </div>
-          <PageContent
-            breadcrumbs={breadcrumbs}
-            content={content}
-            headerContent={headerContent || <h1>{title}</h1>}
-            showHeader={showHeader}
-          />
-        </div>
+        <SidenavLayout
+          sidenavItems={sidenavItems}
+          breadcrumbs={breadcrumbs}
+          content={content}
+          headerContent={headerContent || <h1>{title}</h1>}
+          showHeader={showHeader}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
+        />
       ) : (
         <PageContent
           breadcrumbs={breadcrumbs}
@@ -142,9 +135,129 @@ export function Page({
           </a>
         </small>
       </footer>
+      {sidenavItems && !isMobileMenuOpen ? (
+        <div className={styles.mobileMenuFab}>
+          <Button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={isMobileMenuOpen}
+            aria-label="Open navigation menu"
+          >
+            <IconMenu2 size={20} strokeWidth={2} />
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
+
+const SidenavLayout = ({
+  sidenavItems,
+  breadcrumbs,
+  content,
+  headerContent,
+  showHeader,
+  isMobileMenuOpen,
+  onCloseMobileMenu,
+}) => {
+  return (
+    <>
+      <div className={styles.contentWrap}>
+        <SidenavContent items={sidenavItems} />
+        <div className={styles.contentArea}>
+          <PageContent
+            breadcrumbs={breadcrumbs}
+            content={content}
+            headerContent={headerContent}
+            showHeader={showHeader}
+          />
+        </div>
+      </div>
+      {isMobileMenuOpen ? (
+        <div
+          className={styles.mobileMenuSheet}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+        >
+          <button
+            type="button"
+            className={styles.mobileMenuBackdrop}
+            aria-label="Close navigation menu"
+            onClick={onCloseMobileMenu}
+          />
+          <div className={styles.mobileMenuPanel}>
+            <SidenavContent
+              items={sidenavItems}
+              className={styles.mobileSidenav}
+              itemClassName={styles.mobileSidenavItem}
+              labelClassName={styles.mobileSidenavLabel}
+              topGrowClassName={styles.mobileSidenavTopGrow}
+              onTopGrowClick={onCloseMobileMenu}
+              hideGrow
+              onItemClick={onCloseMobileMenu}
+            />
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
+const SidenavContent = ({
+  items,
+  className,
+  itemClassName,
+  labelClassName,
+  topGrowClassName,
+  onTopGrowClick,
+  hideGrow = false,
+  onItemClick,
+}) => {
+  return (
+    <div className={classNames(styles.sidenav, className)}>
+      {topGrowClassName ? (
+        <div className={topGrowClassName} onClick={onTopGrowClick} />
+      ) : null}
+      {items.map((item, index) =>
+        item.type === "grow" ? (
+          hideGrow ? null : (
+            <div
+              key={`grow-${index}`}
+              style={{
+                flex: 1,
+                borderBottom: item.noBorderBottom
+                  ? "none"
+                  : "1px solid var(--border-color)",
+              }}
+            />
+          )
+        ) : (
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={onItemClick}
+            className={classNames(
+              item.active ? classNames(styles.active, "jcui_hatch") : null,
+              itemClassName,
+            )}
+            style={{
+              borderBottom: item.noBorderBottom
+                ? "none"
+                : "1px solid var(--border-color)",
+            }}
+          >
+            {item.icon}
+            <div className={classNames(styles.label, labelClassName)}>
+              {item.label}
+            </div>
+          </Link>
+        ),
+      )}
+    </div>
+  );
+};
 
 const PageContent = ({ breadcrumbs, content, headerContent, showHeader }) => {
   return (

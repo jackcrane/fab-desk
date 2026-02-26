@@ -35,6 +35,12 @@
   flex-direction: row;
 }
 
+.contentArea {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .sidenav {
   background-color: var(--background-color);
   border-right: 1px solid var(--border-color);
@@ -120,6 +126,119 @@
   position: relative;
 }
 
+.mobileMenuFab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 2100;
+}
+
+.mobileMenuFab button {
+  opacity: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileMenuFab button:active {
+  opacity: 1 !important;
+  background: var(--secondary-color-100) !important;
+}
+
+.mobileMenuSheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mobileMenuBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.35);
+}
+
+.mobileMenuPanel {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  background: var(--background-color);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.mobileMenuPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobileMenuPanelHeader h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mobileSidenav {
+  border-right: 0;
+  flex: 1;
+  overflow-y: auto;
+  flex-direction: column;
+}
+
+.mobileSidenavTopGrow {
+  flex: 1;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobileSidenav .mobileSidenavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileSidenav .mobileSidenavItem:active {
+  opacity: 1 !important;
+  background: var(--secondary-color-100) !important;
+}
+
+.mobileSidenav .mobileSidenavItem.jcui_hatch {
+  opacity: 1;
+  background: var(--secondary-color-100);
+}
+
+.mobileSidenav .mobileSidenavLabel {
+  position: initial;
+
+  background: transparent;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  border: 0;
+  z-index: auto;
+  display: block;
+  padding: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobileSidenav .mobileSidenavLabel {
+  transform: none;
+}
+
+.mobileSidenav .mobileSidenavItem:hover .mobileSidenavLabel {
+  transform: none;
+}
+
 @media (max-width: 640px) {
   .header {
     padding: 12px 16px;
@@ -131,6 +250,20 @@
 
   .footer {
     padding: 12px 16px 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidenav {
+    display: none;
+  }
+
+  .mobileMenuFab {
+    display: inline-flex;
+  }
+
+  .mobileSidenav {
+    display: flex;
   }
 }
 
