@@ -14,6 +14,28 @@ export const authClient = createAuthClient({
   baseURL: authBaseUrl,
 });
 
+function submitRedirectPost(url, formData) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+  form.style.display = 'none';
+
+  for (const [name, value] of Object.entries(formData)) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
 export async function checkDomainForSso(email) {
   const response = await fetch(`${authBaseUrl}/api/auth/check-domain`, {
     method: 'POST',
@@ -89,6 +111,21 @@ export async function signInWithSso({ email, providerId, providerType }) {
 
   if (!url) {
     throw new Error('Unable to start SSO sign in');
+  }
+
+  const method = typeof payload?.method === 'string' ? payload.method.toUpperCase() : 'GET';
+  const formData =
+    payload && typeof payload === 'object' && payload.formData && typeof payload.formData === 'object'
+      ? payload.formData
+      : null;
+
+  if (method === 'POST') {
+    if (!formData) {
+      throw new Error('Unable to start SSO sign in');
+    }
+
+    submitRedirectPost(url, formData);
+    return;
   }
 
   window.location.assign(url);

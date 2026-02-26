@@ -67,6 +67,15 @@ function parseBoolean(value, fallback = false) {
   return fallback;
 }
 
+function parseEntryPointBinding(value) {
+  if (typeof value !== 'string') {
+    return 'redirect';
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'post' ? 'post' : 'redirect';
+}
+
 const defaultSamlExtraFields = Object.freeze({
   firstName: 'firstName',
   lastName: 'lastName',
@@ -171,6 +180,7 @@ function domainMatches(searchDomain, domainList) {
 function createSamlProvider(config) {
   const providerId = String(config.providerId ?? '').trim();
   const domains = parseCsv(config.domains);
+  const entryPointBinding = parseEntryPointBinding(config.entryPointBinding);
   const callbackUrl =
     config.callbackUrl ??
     `${authPublicUrl}/api/auth/sso/saml2/sp/acs/${encodeURIComponent(providerId)}`;
@@ -192,6 +202,7 @@ function createSamlProvider(config) {
   const samlConfig = {
     issuer: String(config.issuer ?? '').trim(),
     entryPoint: String(config.entryPoint ?? '').trim(),
+    entryPointBinding,
     cert: certificate,
     callbackUrl,
     spMetadata: {
@@ -240,6 +251,10 @@ function normalizeProviderInput(rawProvider) {
     typeof rawProvider.entryPoint === 'string' ? rawProvider.entryPoint : '';
   const certificate =
     typeof rawProvider.cert === 'string' ? rawProvider.cert : '';
+  const entryPointBinding =
+    typeof rawProvider.entryPointBinding === 'string'
+      ? rawProvider.entryPointBinding
+      : undefined;
 
   if (!providerId) {
     return null;
@@ -250,6 +265,7 @@ function normalizeProviderInput(rawProvider) {
     domains,
     issuer,
     entryPoint,
+    entryPointBinding,
     certificate,
     callbackUrl:
       typeof rawProvider.callbackUrl === 'string'
@@ -292,6 +308,7 @@ const singleProviderFallback = normalizeProviderInput({
   domains: process.env.SAML_EMAIL_DOMAINS,
   issuer: process.env.SAML_ISSUER,
   entryPoint: process.env.SAML_ENTRY_POINT,
+  entryPointBinding: process.env.SAML_ENTRY_POINT_BINDING,
   cert: process.env.SAML_CERT,
   callbackUrl: process.env.SAML_CALLBACK_URL,
   spEntityId: process.env.SAML_SP_ENTITY_ID,
@@ -360,4 +377,34 @@ export function findSsoProviderByEmail(email) {
   }
 
   return findSsoProviderByDomain(emailDomain);
+}
+
+export function findDefaultSamlProviderForSignIn({ providerId, email, domain }) {
+  const normalizedProviderId =
+    typeof providerId === 'string' ? providerId.trim() : '';
+
+  if (normalizedProviderId) {
+    return (
+      samlProviders
+        .filter((provider) => provider.enabled)
+        .find((provider) => provider.providerId === normalizedProviderId) ?? null
+    );
+  }
+
+  const normalizedDomainCandidate =
+    typeof domain === 'string'
+      ? domain.trim().toLowerCase()
+      : typeof email === 'string'
+        ? email.split('@')[1]?.toLowerCase() ?? ''
+        : '';
+
+  if (!normalizedDomainCandidate) {
+    return null;
+  }
+
+  return (
+    samlProviders
+      .filter((provider) => provider.enabled)
+      .find((provider) => domainMatches(normalizedDomainCandidate, provider.domains)) ?? null
+  );
 }

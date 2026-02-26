@@ -71,4 +71,5 @@ Use one of these env patterns in `backend/.env`:
     - `SAML_SP_ENTITY_ID`
     - `SAML_SP_PRIVATE_KEY`
     - `SAML_SP_PRIVATE_KEY_PASS`
+    - `SAML_ENTRY_POINT_BINDING` (`redirect` default, set to `post` for POST-only IdP login endpoints)
     - `SAML_ATTRIBUTE_MAPPING_JSON`

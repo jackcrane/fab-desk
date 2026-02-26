@@ -84,6 +84,34 @@ function parseFrontendOrigins(rawOrigins?: string): string[] {
     .filter(Boolean);
 }
 
+function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue === 'true') {
+    return true;
+  }
+
+  if (normalizedValue === 'false') {
+    return false;
+  }
+
+  return fallback;
+}
+
+function parseCsvValues(value: string | undefined): string[] {
+  if (typeof value !== 'string') {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 const frontendOrigins = parseFrontendOrigins(
   process.env.FRONTEND_ORIGINS ?? process.env.FRONTEND_ORIGIN,
 );
@@ -95,12 +123,74 @@ const authOrigin = (() => {
   }
 })();
 const defaultSsoProviders = getDefaultSsoProviders();
+const hasCrossOriginFrontend = frontendOrigins.some((origin) => {
+  try {
+    return new URL(origin).origin !== authOrigin;
+  } catch {
+    return origin !== authOrigin;
+  }
+});
+const skipStateCookieCheck = parseBooleanFlag(
+  process.env.BETTER_AUTH_SKIP_STATE_COOKIE_CHECK,
+  hasCrossOriginFrontend,
+);
+const enableCrossSiteCookies = parseBooleanFlag(
+  process.env.BETTER_AUTH_CROSS_SITE_COOKIES,
+  hasCrossOriginFrontend && authOrigin.startsWith('https://'),
+);
+const trustedSsoProviderIdsFromConfig = defaultSsoProviders
+  .map((provider) => provider.providerId)
+  .filter((providerId): providerId is string => typeof providerId === 'string' && providerId.trim().length > 0);
+const trustedSsoProviderIdsFromEnv = parseCsvValues(process.env.BETTER_AUTH_TRUSTED_SSO_PROVIDER_IDS);
+const trustedSsoProviderIds = [...new Set([...trustedSsoProviderIdsFromConfig, ...trustedSsoProviderIdsFromEnv])];
+const authDebugEnabled =
+  String(process.env.AUTH_DEBUG_LOGS ?? process.env.NODE_ENV !== 'production')
+    .trim()
+    .toLowerCase() !== 'false';
+
+if (authDebugEnabled) {
+  console.log('[auth-debug] better-auth bootstrap', {
+    baseURL: authPublicUrl,
+    frontendOrigins,
+    authOrigin,
+    hasCrossOriginFrontend,
+    skipStateCookieCheck,
+    enableCrossSiteCookies,
+    trustedSsoProviderIds,
+    defaultSsoProviderCount: defaultSsoProviders.length,
+    defaultSsoProviders: defaultSsoProviders.map((provider) => ({
+      providerId: provider.providerId,
+      domain: provider.domain,
+      entryPointBinding: provider.samlConfig?.entryPointBinding ?? 'redirect',
+      callbackUrl: provider.samlConfig?.callbackUrl ?? null,
+      issuer: provider.samlConfig?.issuer ?? null,
+      entryPoint: provider.samlConfig?.entryPoint ?? null,
+      authnRequestsSigned: provider.samlConfig?.authnRequestsSigned ?? false,
+      wantAssertionsSigned: provider.samlConfig?.wantAssertionsSigned ?? true,
+    })),
+  });
+}
 
 export const auth = betterAuth({
   baseURL: authPublicUrl,
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
+  advanced: enableCrossSiteCookies
+    ? {
+        defaultCookieAttributes: {
+          sameSite: 'none',
+          secure: true,
+        },
+      }
+    : undefined,
+  account: {
+    skipStateCookieCheck,
+    accountLinking: {
+      enabled: true,
+      trustedProviders: trustedSsoProviderIds,
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },
