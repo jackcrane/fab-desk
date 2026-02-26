@@ -36,6 +36,23 @@
   width: 100%;
 }
 
+.accessPolicy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accessPolicyLabel {
+  margin: 0;
+}
+
+.accessPolicyOptions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
 @media (max-width: 640px) {
   .main {
     margin-top: 24px;

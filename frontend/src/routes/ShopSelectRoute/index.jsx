@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Card, Hatch, Input, useModal } from "@jackcrane/ui";
+import { Button, Card, Hatch, Input, Radio, RadioGroup, useModal } from "@jackcrane/ui";
 import { authClient } from "../../auth-client";
 import { Page } from "../../components/page";
 import { DitherMeshGradientFill } from "../../components/dither/dither";
@@ -13,9 +13,21 @@ function shopPath(shopId) {
   return `/shop/${encodeURIComponent(shopId)}`;
 }
 
+function emailDomainFromAddress(email) {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  const atIndex = normalizedEmail.lastIndexOf("@");
+
+  if (atIndex < 0 || atIndex === normalizedEmail.length - 1) {
+    return "";
+  }
+
+  return normalizedEmail.slice(atIndex + 1);
+}
+
 export function ShopSelectRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
   const shouldCompleteProfile = needsNameCompletion(session?.user);
+  const emailDomain = emailDomainFromAddress(session?.user?.email);
   const {
     data: shops = [],
     error: shopsError,
@@ -28,6 +40,7 @@ export function ShopSelectRoute({ navigate }) {
   const [shopName, setShopName] = useState("");
   const [organization, setOrganization] = useState("");
   const [primaryContactEmail, setPrimaryContactEmail] = useState("");
+  const [membershipPolicy, setMembershipPolicy] = useState("invite-only");
   const [createError, setCreateError] = useState("");
 
   useEffect(() => {
@@ -56,16 +69,24 @@ export function ShopSelectRoute({ navigate }) {
       return;
     }
 
+    if (membershipPolicy === "domain" && !emailDomain) {
+      setCreateError("Unable to determine your email domain for domain-based access.");
+      return;
+    }
+
     try {
       const createdShop = await createShop({
         name: normalizedName,
         organization: normalizedOrganization,
         primaryContactEmail: normalizedPrimaryContactEmail,
+        membershipPolicy,
+        membershipEmailDomain: membershipPolicy === "domain" ? emailDomain : "",
       });
 
       setShopName("");
       setOrganization("");
       setPrimaryContactEmail("");
+      setMembershipPolicy("invite-only");
       setActiveShopId(createdShop.id);
       navigate(shopPath(createdShop.id), true);
     } catch (error) {
@@ -110,6 +131,29 @@ export function ShopSelectRoute({ navigate }) {
             label="Primary contact email (optional)"
             placeholder="ops@example.com"
           />
+          <div className={style.accessPolicy}>
+            <label className={style.accessPolicyLabel} id="shop-join-policy-label">
+              Who can join this shop?
+            </label>
+            <RadioGroup
+              className={style.accessPolicyOptions}
+              value={membershipPolicy}
+              onValueChange={setMembershipPolicy}
+              aria-labelledby="shop-join-policy-label"
+            >
+              <Radio value="invite-only" label="Only people I invite" variant="secondary" />
+              <Radio
+                value="domain"
+                label={
+                  emailDomain
+                    ? `Anyone with an email ending in @${emailDomain}`
+                    : "Anyone with an email ending in your domain"
+                }
+                variant="secondary"
+                disabled={!emailDomain}
+              />
+            </RadioGroup>
+          </div>
           <Button
             type="submit"
             variant="primary"
