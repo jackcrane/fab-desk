@@ -1,79 +1,57 @@
-const rawAuthPublicUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
+import { prisma } from './db.ts'
 
-export const authPublicUrl = rawAuthPublicUrl.replace(/\/+$/, '');
+const rawAuthPublicUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
+
+export const authPublicUrl = rawAuthPublicUrl.replace(/\/+$/, '')
 
 function parseCsv(value) {
   if (!value) {
-    return [];
+    return []
   }
 
   return value
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function parseJsonArray(value) {
-  if (!value || typeof value !== 'string') {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function parseJsonObject(value) {
-  if (!value || typeof value !== 'string') {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed
-      : null;
-  } catch {
-    return null;
-  }
+    .filter(Boolean)
 }
 
 function normalizeMultiline(value) {
   if (!value) {
-    return '';
+    return ''
   }
 
-  return value.replace(/\\n/g, '\n').trim();
+  return value.replace(/\\n/g, '\n').trim()
 }
 
 function parseBoolean(value, fallback = false) {
-  if (typeof value !== 'string') {
-    return fallback;
+  if (typeof value === 'boolean') {
+    return value
   }
 
-  const normalized = value.trim().toLowerCase();
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const normalized = value.trim().toLowerCase()
 
   if (normalized === 'true') {
-    return true;
+    return true
   }
 
   if (normalized === 'false') {
-    return false;
+    return false
   }
 
-  return fallback;
+  return fallback
 }
 
 function parseEntryPointBinding(value) {
   if (typeof value !== 'string') {
-    return 'redirect';
+    return 'redirect'
   }
 
-  const normalized = value.trim().toLowerCase();
-  return normalized === 'post' ? 'post' : 'redirect';
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'post' ? 'post' : 'redirect'
 }
 
 const defaultSamlExtraFields = Object.freeze({
@@ -87,20 +65,20 @@ const defaultSamlExtraFields = Object.freeze({
   wsGivenName: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname',
   wsSurname: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname',
   wsName: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
-});
+})
 
 function normalizeSamlMapping(rawMapping) {
   if (!rawMapping || typeof rawMapping !== 'object' || Array.isArray(rawMapping)) {
-    return undefined;
+    return undefined
   }
 
-  const mapping = {};
-  const fieldNames = ['id', 'email', 'emailVerified', 'name', 'firstName', 'lastName'];
+  const mapping = {}
+  const fieldNames = ['id', 'email', 'emailVerified', 'name', 'firstName', 'lastName']
 
   for (const fieldName of fieldNames) {
-    const fieldValue = rawMapping[fieldName];
+    const fieldValue = rawMapping[fieldName]
     if (typeof fieldValue === 'string' && fieldValue.trim()) {
-      mapping[fieldName] = fieldValue.trim();
+      mapping[fieldName] = fieldValue.trim()
     }
   }
 
@@ -109,29 +87,29 @@ function normalizeSamlMapping(rawMapping) {
     typeof rawMapping.extraFields === 'object' &&
     !Array.isArray(rawMapping.extraFields)
   ) {
-    const extraFields = {};
+    const extraFields = {}
     for (const [key, value] of Object.entries(rawMapping.extraFields)) {
       if (typeof key !== 'string' || typeof value !== 'string') {
-        continue;
+        continue
       }
 
-      const normalizedKey = key.trim();
-      const normalizedValue = value.trim();
+      const normalizedKey = key.trim()
+      const normalizedValue = value.trim()
       if (normalizedKey && normalizedValue) {
-        extraFields[normalizedKey] = normalizedValue;
+        extraFields[normalizedKey] = normalizedValue
       }
     }
 
     if (Object.keys(extraFields).length > 0) {
-      mapping.extraFields = extraFields;
+      mapping.extraFields = extraFields
     }
   }
 
-  return Object.keys(mapping).length > 0 ? mapping : undefined;
+  return Object.keys(mapping).length > 0 ? mapping : undefined
 }
 
 function buildSamlMapping(rawMapping) {
-  const mapping = normalizeSamlMapping(rawMapping) ?? {};
+  const mapping = normalizeSamlMapping(rawMapping) ?? {}
 
   return {
     ...mapping,
@@ -139,7 +117,7 @@ function buildSamlMapping(rawMapping) {
       ...defaultSamlExtraFields,
       ...(mapping.extraFields ?? {}),
     },
-  };
+  }
 }
 
 function escapeXml(value) {
@@ -148,7 +126,7 @@ function escapeXml(value) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/'/g, '&apos;')
 }
 
 function buildSpMetadataXml({
@@ -165,30 +143,30 @@ function buildSpMetadataXml({
     `  Location="${escapeXml(callbackUrl)}"/>`,
     '</SPSSODescriptor>',
     '</EntityDescriptor>',
-  ].join('');
+  ].join('')
 }
 
 function domainMatches(searchDomain, domainList) {
-  const normalizedSearchDomain = searchDomain.toLowerCase();
+  const normalizedSearchDomain = searchDomain.toLowerCase()
   return domainList.some(
     (domain) =>
       normalizedSearchDomain === domain ||
       normalizedSearchDomain.endsWith(`.${domain}`),
-  );
+  )
 }
 
 function createSamlProvider(config) {
-  const providerId = String(config.providerId ?? '').trim();
-  const domains = parseCsv(config.domains);
-  const entryPointBinding = parseEntryPointBinding(config.entryPointBinding);
+  const providerId = String(config.providerId ?? '').trim()
+  const domains = parseCsv(config.domains)
+  const entryPointBinding = parseEntryPointBinding(config.entryPointBinding)
   const callbackUrl =
     config.callbackUrl ??
-    `${authPublicUrl}/api/auth/sso/saml2/sp/acs/${encodeURIComponent(providerId)}`;
-  const certificate = normalizeMultiline(config.certificate);
-  const spPrivateKey = normalizeMultiline(config.spPrivateKey);
+    `${authPublicUrl}/api/auth/sso/saml2/sp/acs/${encodeURIComponent(providerId)}`
+  const certificate = normalizeMultiline(config.certificate)
+  const spPrivateKey = normalizeMultiline(config.spPrivateKey)
   const spEntityId =
     config.spEntityId ??
-    `${authPublicUrl}/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`;
+    `${authPublicUrl}/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`
   const spMetadataXml =
     config.spMetadataXml ??
     buildSpMetadataXml({
@@ -196,8 +174,8 @@ function createSamlProvider(config) {
       callbackUrl,
       authnRequestsSigned: config.authnRequestsSigned,
       wantAssertionsSigned: config.wantAssertionsSigned,
-    });
-  const mapping = buildSamlMapping(config.mapping);
+    })
+  const mapping = buildSamlMapping(config.mapping)
 
   const samlConfig = {
     issuer: String(config.issuer ?? '').trim(),
@@ -214,13 +192,13 @@ function createSamlProvider(config) {
     wantAssertionsSigned: config.wantAssertionsSigned,
     authnRequestsSigned: config.authnRequestsSigned,
     mapping,
-  };
+  }
 
   const enabled =
     domains.length > 0 &&
     Boolean(samlConfig.issuer) &&
     Boolean(samlConfig.entryPoint) &&
-    Boolean(samlConfig.cert);
+    Boolean(samlConfig.cert)
 
   return {
     providerId,
@@ -229,104 +207,94 @@ function createSamlProvider(config) {
     providerType: 'saml',
     samlConfig,
     enabled,
-  };
+  }
 }
 
-function normalizeProviderInput(rawProvider) {
-  if (!rawProvider || typeof rawProvider !== 'object') {
-    return null;
+function normalizeProviderRow(rawRow) {
+  if (!rawRow || typeof rawRow !== 'object') {
+    return null
   }
 
   const providerId =
-    typeof rawProvider.providerId === 'string' ? rawProvider.providerId : '';
-  const domains =
-    Array.isArray(rawProvider.domains)
-      ? rawProvider.domains.join(',')
-      : typeof rawProvider.domains === 'string'
-        ? rawProvider.domains
-        : '';
-  const issuer =
-    typeof rawProvider.issuer === 'string' ? rawProvider.issuer : '';
-  const entryPoint =
-    typeof rawProvider.entryPoint === 'string' ? rawProvider.entryPoint : '';
-  const certificate =
-    typeof rawProvider.cert === 'string' ? rawProvider.cert : '';
-  const entryPointBinding =
-    typeof rawProvider.entryPointBinding === 'string'
-      ? rawProvider.entryPointBinding
-      : undefined;
+    typeof rawRow.provider_id === 'string' ? rawRow.provider_id.trim() : ''
 
   if (!providerId) {
-    return null;
+    return null
   }
+
+  const domains =
+    Array.isArray(rawRow.domains)
+      ? rawRow.domains.join(',')
+      : typeof rawRow.domains === 'string'
+        ? rawRow.domains
+        : ''
 
   return {
     providerId,
     domains,
-    issuer,
-    entryPoint,
-    entryPointBinding,
-    certificate,
-    callbackUrl:
-      typeof rawProvider.callbackUrl === 'string'
-        ? rawProvider.callbackUrl
-        : undefined,
-    spEntityId:
-      typeof rawProvider.spEntityId === 'string'
-        ? rawProvider.spEntityId
-        : undefined,
-    spPrivateKey:
-      typeof rawProvider.spPrivateKey === 'string'
-        ? rawProvider.spPrivateKey
-        : undefined,
+    issuer: typeof rawRow.issuer === 'string' ? rawRow.issuer : '',
+    entryPoint: typeof rawRow.entry_point === 'string' ? rawRow.entry_point : '',
+    entryPointBinding: parseEntryPointBinding(rawRow.entry_point_binding),
+    certificate: typeof rawRow.cert === 'string' ? rawRow.cert : '',
+    callbackUrl: typeof rawRow.callback_url === 'string' ? rawRow.callback_url : undefined,
+    spEntityId: typeof rawRow.sp_entity_id === 'string' ? rawRow.sp_entity_id : undefined,
+    spPrivateKey: typeof rawRow.sp_private_key === 'string' ? rawRow.sp_private_key : undefined,
     spPrivateKeyPass:
-      typeof rawProvider.spPrivateKeyPass === 'string'
-        ? rawProvider.spPrivateKeyPass
-        : undefined,
-    spMetadataXml:
-      typeof rawProvider.spMetadataXml === 'string'
-        ? rawProvider.spMetadataXml
-        : undefined,
-    wantAssertionsSigned:
-      typeof rawProvider.wantAssertionsSigned === 'boolean'
-        ? rawProvider.wantAssertionsSigned
-        : true,
-    authnRequestsSigned:
-      typeof rawProvider.authnRequestsSigned === 'boolean'
-        ? rawProvider.authnRequestsSigned
-        : false,
-    mapping: normalizeSamlMapping(rawProvider.mapping),
-  };
+      typeof rawRow.sp_private_key_pass === 'string' ? rawRow.sp_private_key_pass : undefined,
+    spMetadataXml: typeof rawRow.sp_metadata_xml === 'string' ? rawRow.sp_metadata_xml : undefined,
+    wantAssertionsSigned: parseBoolean(rawRow.want_assertions_signed, true),
+    authnRequestsSigned: parseBoolean(rawRow.authn_requests_signed, false),
+    mapping: normalizeSamlMapping(rawRow.mapping),
+    enabled: parseBoolean(rawRow.enabled, true),
+  }
 }
 
-const providersFromJson = parseJsonArray(process.env.SAML_SSO_PROVIDERS_JSON)
-  .map(normalizeProviderInput)
-  .filter(Boolean);
+async function loadProviderInputsFromDatabase() {
+  try {
+    const rows = await prisma.$queryRaw`
+      SELECT
+        provider_id,
+        domains,
+        issuer,
+        entry_point,
+        entry_point_binding,
+        cert,
+        callback_url,
+        sp_entity_id,
+        sp_private_key,
+        sp_private_key_pass,
+        sp_metadata_xml,
+        mapping,
+        want_assertions_signed,
+        authn_requests_signed,
+        enabled
+      FROM saml_provider_configs
+      ORDER BY provider_id ASC
+    `
 
-const singleProviderFallback = normalizeProviderInput({
-  providerId: process.env.SAML_PROVIDER_ID,
-  domains: process.env.SAML_EMAIL_DOMAINS,
-  issuer: process.env.SAML_ISSUER,
-  entryPoint: process.env.SAML_ENTRY_POINT,
-  entryPointBinding: process.env.SAML_ENTRY_POINT_BINDING,
-  cert: process.env.SAML_CERT,
-  callbackUrl: process.env.SAML_CALLBACK_URL,
-  spEntityId: process.env.SAML_SP_ENTITY_ID,
-  spPrivateKey: process.env.SAML_SP_PRIVATE_KEY,
-  spPrivateKeyPass: process.env.SAML_SP_PRIVATE_KEY_PASS,
-  wantAssertionsSigned: parseBoolean(process.env.SAML_WANT_ASSERTIONS_SIGNED, true),
-  authnRequestsSigned: parseBoolean(process.env.SAML_AUTHN_REQUESTS_SIGNED, false),
-  mapping: parseJsonObject(process.env.SAML_ATTRIBUTE_MAPPING_JSON),
-});
+    if (!Array.isArray(rows)) {
+      return []
+    }
 
-const providerInputs =
-  providersFromJson.length > 0
-    ? providersFromJson
-    : singleProviderFallback
-      ? [singleProviderFallback]
-      : [];
+    return rows
+      .map((row) => normalizeProviderRow(row))
+      .filter(Boolean)
+      .filter((provider) => provider.enabled !== false)
+  } catch (error) {
+    console.error('Unable to load SAML provider config from table saml_provider_configs.', error)
+    throw new Error(
+      'SAML provider configuration must be loaded from table "saml_provider_configs". Run backend/sql/2026-02-26_seed_saml_provider_configs.sql first.',
+    )
+  }
+}
 
-export const samlProviders = providerInputs.map((provider) => createSamlProvider(provider));
+const providerInputs = await loadProviderInputsFromDatabase()
+
+if (providerInputs.length === 0) {
+  console.warn('No enabled SAML providers were found in table saml_provider_configs.')
+}
+
+export const samlProviders = providerInputs.map((provider) => createSamlProvider(provider))
 
 export function getDefaultSsoProviders() {
   return samlProviders
@@ -335,60 +303,60 @@ export function getDefaultSsoProviders() {
       domain: provider.domain,
       providerId: provider.providerId,
       samlConfig: provider.samlConfig,
-    }));
+    }))
 }
 
 export function findSsoProviderByDomain(domain) {
   if (!domain) {
-    return null;
+    return null
   }
 
-  const normalizedDomain = domain.trim().toLowerCase();
+  const normalizedDomain = domain.trim().toLowerCase()
 
   if (!normalizedDomain) {
-    return null;
+    return null
   }
 
   const provider =
     samlProviders
       .filter((candidate) => candidate.enabled)
-      .find((candidate) => domainMatches(normalizedDomain, candidate.domains)) ?? null;
+      .find((candidate) => domainMatches(normalizedDomain, candidate.domains)) ?? null
 
   if (!provider) {
-    return null;
+    return null
   }
 
   return {
     providerId: provider.providerId,
     providerType: provider.providerType,
     domain: normalizedDomain,
-  };
+  }
 }
 
 export function findSsoProviderByEmail(email) {
   if (!email || typeof email !== 'string') {
-    return null;
+    return null
   }
 
-  const emailDomain = email.split('@')[1]?.toLowerCase();
+  const emailDomain = email.split('@')[1]?.toLowerCase()
 
   if (!emailDomain) {
-    return null;
+    return null
   }
 
-  return findSsoProviderByDomain(emailDomain);
+  return findSsoProviderByDomain(emailDomain)
 }
 
 export function findDefaultSamlProviderForSignIn({ providerId, email, domain }) {
   const normalizedProviderId =
-    typeof providerId === 'string' ? providerId.trim() : '';
+    typeof providerId === 'string' ? providerId.trim() : ''
 
   if (normalizedProviderId) {
     return (
       samlProviders
         .filter((provider) => provider.enabled)
         .find((provider) => provider.providerId === normalizedProviderId) ?? null
-    );
+    )
   }
 
   const normalizedDomainCandidate =
@@ -396,15 +364,15 @@ export function findDefaultSamlProviderForSignIn({ providerId, email, domain }) 
       ? domain.trim().toLowerCase()
       : typeof email === 'string'
         ? email.split('@')[1]?.toLowerCase() ?? ''
-        : '';
+        : ''
 
   if (!normalizedDomainCandidate) {
-    return null;
+    return null
   }
 
   return (
     samlProviders
       .filter((provider) => provider.enabled)
       .find((provider) => domainMatches(normalizedDomainCandidate, provider.domains)) ?? null
-  );
+  )
 }

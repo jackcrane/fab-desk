@@ -76,6 +76,28 @@ model SsoProvider {
   updatedAt      DateTime
 }
 
+model SamlProviderConfig {
+  providerId            String   @id @map("provider_id")
+  domains               String[]
+  issuer                String
+  entryPoint            String   @map("entry_point")
+  entryPointBinding     String   @default("redirect") @map("entry_point_binding")
+  cert                  String
+  callbackUrl           String?  @map("callback_url")
+  spEntityId            String?  @map("sp_entity_id")
+  spPrivateKey          String?  @map("sp_private_key")
+  spPrivateKeyPass      String?  @map("sp_private_key_pass")
+  spMetadataXml         String?  @map("sp_metadata_xml")
+  mapping               Json?
+  wantAssertionsSigned  Boolean  @default(true) @map("want_assertions_signed")
+  authnRequestsSigned   Boolean  @default(false) @map("authn_requests_signed")
+  enabled               Boolean  @default(true)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("saml_provider_configs")
+}
+
 model Shop {
   id                  String       @id @default(cuid())
   name                String

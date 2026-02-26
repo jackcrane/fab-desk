@@ -101,17 +101,6 @@ function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean
   return fallback;
 }
 
-function parseCsvValues(value: string | undefined): string[] {
-  if (typeof value !== 'string') {
-    return [];
-  }
-
-  return value
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
 const frontendOrigins = parseFrontendOrigins(
   process.env.FRONTEND_ORIGINS ?? process.env.FRONTEND_ORIGIN,
 );
@@ -141,8 +130,7 @@ const enableCrossSiteCookies = parseBooleanFlag(
 const trustedSsoProviderIdsFromConfig = defaultSsoProviders
   .map((provider) => provider.providerId)
   .filter((providerId): providerId is string => typeof providerId === 'string' && providerId.trim().length > 0);
-const trustedSsoProviderIdsFromEnv = parseCsvValues(process.env.BETTER_AUTH_TRUSTED_SSO_PROVIDER_IDS);
-const trustedSsoProviderIds = [...new Set([...trustedSsoProviderIdsFromConfig, ...trustedSsoProviderIdsFromEnv])];
+const trustedSsoProviderIds = [...new Set(trustedSsoProviderIdsFromConfig)];
 
 export const auth = betterAuth({
   baseURL: authPublicUrl,
