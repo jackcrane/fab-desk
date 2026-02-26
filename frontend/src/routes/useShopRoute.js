@@ -5,12 +5,14 @@ import {
   getActiveShopId,
   setActiveShopId,
 } from "../lib/active-shop";
+import { needsNameCompletion } from "../lib/profile-name";
 import { useShopsQuery } from "../lib/shops-orpc";
 
 export function useShopRoute({ navigate, shopId }) {
   const { data: session, isPending } = authClient.useSession();
+  const shouldCompleteProfile = needsNameCompletion(session?.user);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const canQueryShops = !!shopId;
+  const canQueryShops = !!shopId && !shouldCompleteProfile;
   const {
     data: shops,
     error: shopsError,
@@ -33,6 +35,13 @@ export function useShopRoute({ navigate, shopId }) {
       navigate("/sign-in", true);
     }
   }, [isPending, navigate, session]);
+
+  useEffect(() => {
+    if (!isPending && session && shouldCompleteProfile) {
+      clearActiveShopId();
+      navigate("/complete-profile", true);
+    }
+  }, [isPending, navigate, session, shouldCompleteProfile]);
 
   useEffect(() => {
     if (isPending || !session) {
@@ -95,7 +104,10 @@ export function useShopRoute({ navigate, shopId }) {
     session,
     isPending,
     activeShop,
-    isLoading: (canQueryShops && isLoadingShops) || (!activeShop && isPending),
+    isLoading:
+      (canQueryShops && isLoadingShops) ||
+      (!activeShop && isPending) ||
+      shouldCompleteProfile,
     isSigningOut,
     onSignOut,
   };

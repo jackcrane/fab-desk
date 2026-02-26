@@ -3,6 +3,7 @@ import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { HomeRoute } from "./routes/HomeRoute";
 import { SignInRoute } from "./routes/SignInRoute/index";
 import { SignUpRoute } from "./routes/SignUpRoute/index";
+import { CompleteProfileRoute } from "./routes/CompleteProfileRoute/index";
 import { ShopHomeRoute } from "./routes/ShopHomeRoute";
 import { ShopKbRoute } from "./routes/ShopKbRoute";
 import { ShopSettingsRoute } from "./routes/ShopSettingsRoute";
@@ -34,6 +35,11 @@ function SignInRoutePage() {
 function SignUpRoutePage() {
   const navigate = useLegacyNavigate();
   return <SignUpRoute navigate={navigate} />;
+}
+
+function CompleteProfileRoutePage() {
+  const navigate = useLegacyNavigate();
+  return <CompleteProfileRoute navigate={navigate} />;
 }
 
 function ShopSelectRoutePage() {
@@ -76,6 +82,7 @@ export default function App() {
       <Route path="/" element={<HomeRoutePage />} />
       <Route path="/sign-in" element={<SignInRoutePage />} />
       <Route path="/sign-up" element={<SignUpRoutePage />} />
+      <Route path="/complete-profile" element={<CompleteProfileRoutePage />} />
       <Route path="/shop" element={<ShopSelectRoutePage />} />
       <Route path="/shop/:shopId" element={<ShopHomeRoutePage />} />
       <Route path="/shop/:shopId/kb" element={<ShopKbRoutePage />} />

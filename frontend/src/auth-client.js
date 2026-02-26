@@ -71,7 +71,7 @@ export async function checkDomainForSso(email) {
 }
 
 export async function signInWithSso({ email, providerId, providerType }) {
-  const callbackURL = `${window.location.origin}/shop`;
+  const callbackURL = `${window.location.origin}/complete-profile`;
   const errorCallbackURL = `${window.location.origin}/sign-in`;
 
   const response = await fetch(`${authBaseUrl}/api/auth/sign-in/sso`, {

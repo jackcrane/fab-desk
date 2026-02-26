@@ -4,6 +4,7 @@ import { authClient } from "../../auth-client";
 import { Page } from "../../components/page";
 import { DitherMeshGradientFill } from "../../components/dither/dither";
 import { clearActiveShopId, setActiveShopId } from "../../lib/active-shop";
+import { needsNameCompletion } from "../../lib/profile-name";
 import { useCreateShopMutation, useShopsQuery } from "../../lib/shops-orpc";
 import style from "./ShopSelectRoute.module.css";
 import { Flex } from "../../components/flex";
@@ -14,12 +15,13 @@ function shopPath(shopId) {
 
 export function ShopSelectRoute({ navigate }) {
   const { data: session, isPending } = authClient.useSession();
+  const shouldCompleteProfile = needsNameCompletion(session?.user);
   const {
     data: shops = [],
     error: shopsError,
     isLoading: isLoadingShops,
   } = useShopsQuery({
-    enabled: !isPending,
+    enabled: !isPending && !shouldCompleteProfile,
     shouldRetryOnError: false,
   });
   const { trigger: createShop, isMutating: isCreating } = useCreateShopMutation();
@@ -34,6 +36,13 @@ export function ShopSelectRoute({ navigate }) {
       navigate("/sign-in", true);
     }
   }, [isPending, navigate, session]);
+
+  useEffect(() => {
+    if (!isPending && session && shouldCompleteProfile) {
+      clearActiveShopId();
+      navigate("/complete-profile", true);
+    }
+  }, [isPending, navigate, session, shouldCompleteProfile]);
 
   const onCreateShop = async () => {
     setCreateError("");
@@ -120,6 +129,10 @@ export function ShopSelectRoute({ navigate }) {
   });
 
   if (!isPending && !session) {
+    return null;
+  }
+
+  if (!isPending && session && shouldCompleteProfile) {
     return null;
   }
 
