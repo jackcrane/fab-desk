@@ -71,3 +71,4 @@ Use one of these env patterns in `backend/.env`:
     - `SAML_SP_ENTITY_ID`
     - `SAML_SP_PRIVATE_KEY`
     - `SAML_SP_PRIVATE_KEY_PASS`
+    - `SAML_ATTRIBUTE_MAPPING_JSON`

@@ -26,6 +26,21 @@ function parseJsonArray(value) {
   }
 }
 
+function parseJsonObject(value) {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeMultiline(value) {
   if (!value) {
     return '';
@@ -50,6 +65,72 @@ function parseBoolean(value, fallback = false) {
   }
 
   return fallback;
+}
+
+const defaultSamlExtraFields = Object.freeze({
+  firstName: 'firstName',
+  lastName: 'lastName',
+  givenName: 'givenName',
+  surname: 'surname',
+  displayName: 'displayName',
+  fullName: 'name',
+  commonName: 'cn',
+  wsGivenName: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname',
+  wsSurname: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname',
+  wsName: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
+});
+
+function normalizeSamlMapping(rawMapping) {
+  if (!rawMapping || typeof rawMapping !== 'object' || Array.isArray(rawMapping)) {
+    return undefined;
+  }
+
+  const mapping = {};
+  const fieldNames = ['id', 'email', 'emailVerified', 'name', 'firstName', 'lastName'];
+
+  for (const fieldName of fieldNames) {
+    const fieldValue = rawMapping[fieldName];
+    if (typeof fieldValue === 'string' && fieldValue.trim()) {
+      mapping[fieldName] = fieldValue.trim();
+    }
+  }
+
+  if (
+    rawMapping.extraFields &&
+    typeof rawMapping.extraFields === 'object' &&
+    !Array.isArray(rawMapping.extraFields)
+  ) {
+    const extraFields = {};
+    for (const [key, value] of Object.entries(rawMapping.extraFields)) {
+      if (typeof key !== 'string' || typeof value !== 'string') {
+        continue;
+      }
+
+      const normalizedKey = key.trim();
+      const normalizedValue = value.trim();
+      if (normalizedKey && normalizedValue) {
+        extraFields[normalizedKey] = normalizedValue;
+      }
+    }
+
+    if (Object.keys(extraFields).length > 0) {
+      mapping.extraFields = extraFields;
+    }
+  }
+
+  return Object.keys(mapping).length > 0 ? mapping : undefined;
+}
+
+function buildSamlMapping(rawMapping) {
+  const mapping = normalizeSamlMapping(rawMapping) ?? {};
+
+  return {
+    ...mapping,
+    extraFields: {
+      ...defaultSamlExtraFields,
+      ...(mapping.extraFields ?? {}),
+    },
+  };
 }
 
 function escapeXml(value) {
@@ -106,6 +187,7 @@ function createSamlProvider(config) {
       authnRequestsSigned: config.authnRequestsSigned,
       wantAssertionsSigned: config.wantAssertionsSigned,
     });
+  const mapping = buildSamlMapping(config.mapping);
 
   const samlConfig = {
     issuer: String(config.issuer ?? '').trim(),
@@ -120,6 +202,7 @@ function createSamlProvider(config) {
     },
     wantAssertionsSigned: config.wantAssertionsSigned,
     authnRequestsSigned: config.authnRequestsSigned,
+    mapping,
   };
 
   const enabled =
@@ -196,6 +279,7 @@ function normalizeProviderInput(rawProvider) {
       typeof rawProvider.authnRequestsSigned === 'boolean'
         ? rawProvider.authnRequestsSigned
         : false,
+    mapping: normalizeSamlMapping(rawProvider.mapping),
   };
 }
 
@@ -215,6 +299,7 @@ const singleProviderFallback = normalizeProviderInput({
   spPrivateKeyPass: process.env.SAML_SP_PRIVATE_KEY_PASS,
   wantAssertionsSigned: parseBoolean(process.env.SAML_WANT_ASSERTIONS_SIGNED, true),
   authnRequestsSigned: parseBoolean(process.env.SAML_AUTHN_REQUESTS_SIGNED, false),
+  mapping: parseJsonObject(process.env.SAML_ATTRIBUTE_MAPPING_JSON),
 });
 
 const providerInputs =

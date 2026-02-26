@@ -19,6 +19,15 @@ export type DefaultSsoProvider = {
       privateKey?: string;
       privateKeyPass?: string;
     };
+    mapping?: {
+      id?: string;
+      email?: string;
+      emailVerified?: string;
+      name?: string;
+      firstName?: string;
+      lastName?: string;
+      extraFields?: Record<string, string>;
+    };
     wantAssertionsSigned?: boolean;
     authnRequestsSigned?: boolean;
   };
