@@ -91,7 +91,64 @@ function toShopSummary(record: ShopMembershipRow): ShopSummary {
   };
 }
 
+async function ensureDomainMembershipsForUser(userId: string): Promise<void> {
+  const userRows = await prisma.$queryRaw<{ email: string }[]>`
+    SELECT "email"
+    FROM "User"
+    WHERE "id" = ${userId}
+    LIMIT 1
+  `;
+  const userDomain = emailDomainFromAddress(userRows[0]?.email ?? null);
+
+  if (!userDomain) {
+    return;
+  }
+
+  const eligibleShops = await prisma.$queryRaw<{ shopId: string }[]>`
+    SELECT
+      s."id" AS "shopId"
+    FROM "Shop" s
+    LEFT JOIN "Membership" m
+      ON m."shopId" = s."id"
+      AND m."userId" = ${userId}
+    WHERE s."membershipPolicy" = 'domain'
+      AND LOWER(BTRIM(COALESCE(s."membershipEmailDomain", ''))) = ${userDomain}
+      AND m."id" IS NULL
+  `;
+
+  if (eligibleShops.length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  await prisma.$transaction(
+    eligibleShops.map((shop) =>
+      prisma.$executeRaw`
+        INSERT INTO "Membership" (
+          "id",
+          "role",
+          "createdAt",
+          "updatedAt",
+          "userId",
+          "shopId"
+        )
+        VALUES (
+          ${randomUUID()},
+          'MEMBER',
+          ${now},
+          ${now},
+          ${userId},
+          ${shop.shopId}
+        )
+        ON CONFLICT ("userId", "shopId") DO NOTHING
+      `,
+    ),
+  );
+}
+
 export async function listShopsForUser(userId: string): Promise<ShopSummary[]> {
+  await ensureDomainMembershipsForUser(userId);
+
   const memberships = await prisma.$queryRaw<ShopMembershipRow[]>`
     SELECT
       s."id",
