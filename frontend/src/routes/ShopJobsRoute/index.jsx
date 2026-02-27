@@ -1,12 +1,21 @@
 import { useMemo, useState } from "react";
 import { Page, sidenavItems } from "../../components/page";
 import { useShopRoute } from "../useShopRoute";
-import { Hatch, SegmentedControl, Select } from "@jackcrane/ui";
 import {
+  Button,
+  Hatch,
+  Input,
+  SegmentedControl,
+  Select,
+  useModal,
+} from "@jackcrane/ui";
+import {
+  useCreateJobMutation,
   useShopJobsQuery,
   useUpdateJobStatusMutation,
 } from "../../lib/jobs-orpc";
 import styles from "./shop.module.css";
+import { Flex } from "../../components/flex";
 
 const STATUS_OPTIONS = [
   { label: "Draft", value: "DRAFT" },
@@ -69,6 +78,29 @@ function formatPrioritySymbol(priority) {
   return "!";
 }
 
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function defaultDueDateInputValue() {
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+
+  return toDateInputValue(nextWeek);
+}
+
+function formatDueDateLabel(dueDate) {
+  if (typeof dueDate !== "string" || !dueDate) {
+    return "";
+  }
+
+  return new Date(`${dueDate}T00:00:00`).toLocaleDateString();
+}
+
 export function ShopJobsRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading } = useShopRoute({
     navigate,
@@ -89,6 +121,13 @@ export function ShopJobsRoute({ navigate, shopId }) {
     useUpdateJobStatusMutation({
       shopId: pageShopId,
     });
+  const { trigger: createJob, isMutating: isCreatingJob } = useCreateJobMutation({
+    shopId: pageShopId,
+  });
+  const [newJobName, setNewJobName] = useState("");
+  const [newJobCategory, setNewJobCategory] = useState("");
+  const [newJobDueDate, setNewJobDueDate] = useState(defaultDueDateInputValue);
+  const [createJobError, setCreateJobError] = useState("");
   const jobs = jobsData?.jobs ?? [];
   const pageLoading =
     isLoading || !activeShop || (!!activeShop && isLoadingJobs && !jobsData);
@@ -113,6 +152,98 @@ export function ShopJobsRoute({ navigate, shopId }) {
       setUpdatingJobId("");
     }
   };
+
+  const resetCreateJobForm = () => {
+    setNewJobName("");
+    setNewJobCategory("");
+    setNewJobDueDate(defaultDueDateInputValue());
+    setCreateJobError("");
+  };
+
+  const onCreateJob = async () => {
+    if (!activeShop) {
+      return;
+    }
+
+    setCreateJobError("");
+
+    const name = newJobName.trim();
+    const category = newJobCategory.trim();
+    const requestorName = session?.user?.name?.trim();
+    const requestorEmail = session?.user?.email?.trim();
+    const requestorLabel = requestorName || requestorEmail || "Internal Request";
+
+    if (!name || !category || !newJobDueDate) {
+      setCreateJobError("All fields are required.");
+      return;
+    }
+
+    try {
+      await createJob({
+        shopId: activeShop.id,
+        name,
+        customer: requestorLabel,
+        category,
+        dueDate: newJobDueDate,
+        assignee: requestorLabel,
+      });
+
+      resetCreateJobForm();
+      setOpen(false);
+    } catch (error) {
+      setCreateJobError(error?.message ?? "Unable to create job.");
+    }
+  };
+
+  const { Modal, setOpen } = useModal({
+    title: "Create a new job",
+    content: (
+      <form
+        className={styles.modalForm}
+        onSubmitCapture={(event) => {
+          event.preventDefault();
+        }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onCreateJob();
+        }}
+      >
+        <Flex gap={2}>
+          <Input
+            type="text"
+            value={newJobName}
+            onChange={(event) => setNewJobName(event.target.value)}
+            required
+            label="Job name"
+            placeholder="Prototype Fixture Set"
+          />
+          <Input
+            type="text"
+            value={newJobCategory}
+            onChange={(event) => setNewJobCategory(event.target.value)}
+            required
+            label="Category"
+            placeholder="Machine Shop"
+          />
+          <Input
+            type="date"
+            value={newJobDueDate}
+            onChange={(event) => setNewJobDueDate(event.target.value)}
+            required
+            label="Due date"
+          />
+          <Button type="submit" variant="primary" disabled={isCreatingJob} loading={isCreatingJob}>
+            {isCreatingJob ? "Creating..." : "Create job"}
+          </Button>
+          {createJobError ? (
+            <Hatch variant="danger" footerHeight={12}>
+              {createJobError}
+            </Hatch>
+          ) : null}
+        </Flex>
+      </form>
+    ),
+  });
 
   return (
     <Page
@@ -143,18 +274,29 @@ export function ShopJobsRoute({ navigate, shopId }) {
           : []
       }
     >
+      <Modal />
       <main>
-        <SegmentedControl
-          options={[
-            { label: "List", value: "list" },
-            { label: "Calendar", value: "calendar" },
-            { label: "Kanban", value: "kanban" },
-            { label: "Gantt", value: "gantt" },
-          ]}
-          value={viewMode}
-          onValueChange={setViewMode}
-        />
-
+        <Flex direction="row" gap={1} justify={"space-between"}>
+          <SegmentedControl
+            options={[
+              { label: "List", value: "list" },
+              { label: "Calendar", value: "calendar" },
+              { label: "Kanban", value: "kanban" },
+              { label: "Gantt", value: "gantt" },
+            ]}
+            value={viewMode}
+            onValueChange={setViewMode}
+          />
+          <Button
+            variant="primary"
+            onClick={() => {
+              setCreateJobError("");
+              setOpen(true);
+            }}
+          >
+            New Job
+          </Button>
+        </Flex>
         {jobsError ? (
           <Hatch variant="danger" style={{ marginTop: 16 }}>
             Unable to load jobs right now:{" "}
@@ -212,7 +354,7 @@ export function ShopJobsRoute({ navigate, shopId }) {
                       </div>{" "}
                       {formatPriorityLabel(job.priority)}
                     </td>
-                    <td>{new Date(job.dueDate).toLocaleDateString()}</td>
+                    <td>{formatDueDateLabel(job.dueDate)}</td>
                     <td>{job.assignee}</td>
                   </tr>
                 ))

@@ -44,3 +44,18 @@ export function useUpdateJobStatusMutation(options = {}) {
     },
   });
 }
+
+export function useCreateJobMutation(options = {}) {
+  const { shopId, onSuccess, ...restOptions } = options;
+
+  return useSWRMutation(orpc.job.create.key(), orpc.job.create.mutator(), {
+    ...restOptions,
+    onSuccess: (data, key, config) => {
+      const effectiveShopId = config.arg?.shopId ?? shopId;
+      if (effectiveShopId) {
+        void revalidateJobsQuery(effectiveShopId);
+      }
+      onSuccess?.(data, key, config);
+    },
+  });
+}

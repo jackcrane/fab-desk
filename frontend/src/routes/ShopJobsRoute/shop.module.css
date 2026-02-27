@@ -22,3 +22,7 @@
   text-align: center;
   color: var(--secondary-color-500);
 }
+
+.modalForm {
+  width: 100%;
+}

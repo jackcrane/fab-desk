@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from './db';
 
@@ -48,8 +49,47 @@ export interface UpdateJobStatusResult {
   status: JobStatus;
 }
 
+function parseDateOnlyToUtc(dateValue: string): Date {
+  const [yearPart, monthPart, dayPart] = dateValue.split('-');
+
+  return new Date(Date.UTC(Number(yearPart), Number(monthPart) - 1, Number(dayPart)));
+}
+
+function isValidDateOnlyString(dateValue: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return false;
+  }
+
+  const parsedDate = parseDateOnlyToUtc(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return false;
+  }
+
+  const [yearPart, monthPart, dayPart] = dateValue.split('-').map((part) => Number(part));
+
+  return (
+    parsedDate.getUTCFullYear() === yearPart &&
+    parsedDate.getUTCMonth() + 1 === monthPart &&
+    parsedDate.getUTCDate() === dayPart
+  );
+}
+
 export const listShopJobsInputSchema = z.object({
   shopId: z.string().trim().min(1),
+});
+
+export const createJobInputSchema = z.object({
+  shopId: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(160),
+  customer: z.string().trim().min(1).max(160),
+  category: z.string().trim().min(1).max(160),
+  status: jobStatusSchema.default('DRAFT'),
+  priority: jobPrioritySchema.default('MEDIUM'),
+  dueDate: z.string().trim().refine(isValidDateOnlyString, {
+    message: 'Due date must be a valid date in YYYY-MM-DD format.',
+  }),
+  assignee: z.string().trim().min(1).max(160),
 });
 
 export const updateJobStatusInputSchema = z.object({
@@ -216,6 +256,8 @@ export async function listShopJobsForUser(userId: string, shopId: string): Promi
   }
 }
 
+export type CreateJobInput = z.infer<typeof createJobInputSchema>;
+
 export async function updateJobStatusForUser(
   userId: string,
   shopId: string,
@@ -254,6 +296,63 @@ export async function updateJobStatusForUser(
     return {
       id: jobId,
       status,
+    };
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      throw new JobsSchemaNotReadyError();
+    }
+
+    throw error;
+  }
+}
+
+export async function createJobForUser(userId: string, input: CreateJobInput): Promise<ShopJobSummary> {
+  try {
+    await ensureShopMembership(userId, input.shopId);
+
+    const jobId = randomUUID();
+    const now = new Date();
+    const dueDate = parseDateOnlyToUtc(input.dueDate);
+
+    await prisma.$executeRaw`
+      INSERT INTO "Job" (
+        "id",
+        "shopId",
+        "name",
+        "customer",
+        "category",
+        "status",
+        "priority",
+        "dueDate",
+        "assignee",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES (
+        ${jobId},
+        ${input.shopId},
+        ${input.name},
+        ${input.customer},
+        ${input.category},
+        ${input.status},
+        ${input.priority},
+        ${dueDate},
+        ${input.assignee},
+        ${now},
+        ${now}
+      )
+    `;
+
+    return {
+      id: jobId,
+      name: input.name,
+      customer: input.customer,
+      category: input.category,
+      status: input.status,
+      priority: input.priority,
+      dueDate: toIsoDate(dueDate),
+      assignee: input.assignee,
+      parts: [],
     };
   } catch (error) {
     if (isMissingRelationError(error)) {

@@ -13,6 +13,8 @@ import {
   updateShopBasicSettingsInputSchema,
 } from './shops';
 import {
+  createJobForUser,
+  createJobInputSchema,
   JobNotFoundForUserError,
   JobsSchemaNotReadyError,
   listShopJobsForUser,
@@ -150,6 +152,27 @@ const listByShop = protectedProcedure
     }
   });
 
+const createJob = protectedProcedure
+  .input(createJobInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await createJobForUser(context.userId, input);
+    } catch (error) {
+      if (error instanceof JobShopNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof JobsSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
 const updateStatus = protectedProcedure
   .input(updateJobStatusInputSchema)
   .handler(async ({ context, input }) => {
@@ -180,6 +203,7 @@ export const router = {
   },
   job: {
     listByShop,
+    create: createJob,
     updateStatus,
   },
 };
