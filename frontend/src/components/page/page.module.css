@@ -127,6 +127,7 @@
 }
 
 .mobileMenuFab {
+  display: none;
   position: fixed;
   right: 16px;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
