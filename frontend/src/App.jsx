@@ -9,6 +9,7 @@ import { ShopKbRoute } from "./routes/ShopKbRoute";
 import { ShopSettingsRoute } from "./routes/ShopSettingsRoute";
 import { ShopBasicSettingsRoute } from "./routes/ShopBasicSettingsRoute";
 import { ShopAccessSettingsRoute } from "./routes/ShopAccessSettingsRoute";
+import { ShopProcessesResourcesRoute } from "./routes/ShopProcessesResourcesRoute";
 import { ShopJobsRoute } from "./routes/ShopJobsRoute/index";
 import { ShopJobDetailRoute } from "./routes/ShopJobDetailRoute";
 import { NotFoundRoute } from "./routes/NotFoundRoute/index";
@@ -68,6 +69,12 @@ function ShopJobsRoutePage() {
   return <ShopJobsRoute navigate={navigate} shopId={shopId} />;
 }
 
+function ShopProcessesResourcesRoutePage() {
+  const navigate = useLegacyNavigate();
+  const { shopId = "" } = useParams();
+  return <ShopProcessesResourcesRoute navigate={navigate} shopId={shopId} />;
+}
+
 function ShopJobDetailRoutePage() {
   const navigate = useLegacyNavigate();
   const { shopId = "", jobId = "" } = useParams();
@@ -107,6 +114,10 @@ export default function App() {
       <Route path="/shop" element={<ShopSelectRoutePage />} />
       <Route path="/shop/:shopId" element={<ShopHomeRoutePage />} />
       <Route path="/shop/:shopId/jobs" element={<ShopJobsRoutePage />} />
+      <Route
+        path="/shop/:shopId/processes-resources"
+        element={<ShopProcessesResourcesRoutePage />}
+      />
       <Route
         path="/shop/:shopId/jobs/:jobId"
         element={<ShopJobDetailRoutePage />}

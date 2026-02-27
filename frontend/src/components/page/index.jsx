@@ -8,6 +8,7 @@ import classNames from "classnames";
 import { Link, useNavigate } from "react-router-dom";
 import {
   IconBook,
+  IconHammer,
   IconHome,
   IconMenu2,
   IconRobot,
@@ -310,6 +311,12 @@ export const sidenavItems = ({ activePage, shopId, showSettings = true }) => {
       label: "Jobs",
       active: activePage === "jobs",
       icon: <IconRobot size={32} strokeWidth={1.5} />,
+    },
+    {
+      path: `${homePath}/processes-resources`,
+      label: "Processes & Resources",
+      active: activePage === "processesResources",
+      icon: <IconHammer size={32} strokeWidth={1.5} />,
     },
     {
       path: `${homePath}/kb`,
