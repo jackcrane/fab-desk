@@ -59,3 +59,18 @@ export function useCreateJobMutation(options = {}) {
     },
   });
 }
+
+export function useCreateJobUploadTargetsMutation(options = {}) {
+  const { onSuccess, ...restOptions } = options;
+
+  return useSWRMutation(
+    orpc.job.createUploadTargets.key(),
+    orpc.job.createUploadTargets.mutator(),
+    {
+      ...restOptions,
+      onSuccess: (data, key, config) => {
+        onSuccess?.(data, key, config);
+      },
+    },
+  );
+}

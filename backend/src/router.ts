@@ -13,6 +13,8 @@ import {
   updateShopBasicSettingsInputSchema,
 } from './shops';
 import {
+  createJobUploadTargetsForUser,
+  createJobUploadTargetsInputSchema,
   createJobForUser,
   createJobInputSchema,
   JobNotFoundForUserError,
@@ -20,6 +22,7 @@ import {
   listShopJobsForUser,
   listShopJobsInputSchema,
   ShopNotFoundForUserError as JobShopNotFoundForUserError,
+  UploadStorageConfigError,
   updateJobStatusForUser,
   updateJobStatusInputSchema,
 } from './jobs';
@@ -173,6 +176,32 @@ const createJob = protectedProcedure
     }
   });
 
+const createUploadTargets = protectedProcedure
+  .input(createJobUploadTargetsInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await createJobUploadTargetsForUser(context.userId, input);
+    } catch (error) {
+      if (error instanceof JobShopNotFoundForUserError || error instanceof JobNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof JobsSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+      if (error instanceof UploadStorageConfigError) {
+        throw new ORPCError('INTERNAL_SERVER_ERROR', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
 const updateStatus = protectedProcedure
   .input(updateJobStatusInputSchema)
   .handler(async ({ context, input }) => {
@@ -204,6 +233,7 @@ export const router = {
   job: {
     listByShop,
     create: createJob,
+    createUploadTargets,
     updateStatus,
   },
 };

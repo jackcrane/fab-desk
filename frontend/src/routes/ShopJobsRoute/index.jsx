@@ -3,6 +3,7 @@ import { Page, sidenavItems } from "../../components/page";
 import { useShopRoute } from "../useShopRoute";
 import {
   Button,
+  FileUpload,
   Hatch,
   Input,
   SegmentedControl,
@@ -11,6 +12,7 @@ import {
 } from "@jackcrane/ui";
 import {
   useCreateJobMutation,
+  useCreateJobUploadTargetsMutation,
   useShopJobsQuery,
   useUpdateJobStatusMutation,
 } from "../../lib/jobs-orpc";
@@ -49,6 +51,7 @@ const PRIORITY_LABELS = {
   MEDIUM: "Medium",
   LOW: "Low",
 };
+const MAX_UPLOAD_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
 
 function formatPriorityLabel(priority) {
   return PRIORITY_LABELS[priority] ?? priority;
@@ -101,6 +104,33 @@ function formatDueDateLabel(dueDate) {
   return new Date(`${dueDate}T00:00:00`).toLocaleDateString();
 }
 
+async function uploadFileToTarget(file, uploadTarget) {
+  const formData = new FormData();
+  for (const [fieldName, fieldValue] of Object.entries(uploadTarget.uploadFields ?? {})) {
+    formData.append(fieldName, fieldValue);
+  }
+  formData.append("file", file, file.name);
+
+  try {
+    const response = await fetch(uploadTarget.uploadUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload ${file.name}.`);
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        `Upload blocked by bucket CORS policy for ${file.name}. Allow your frontend origin in Spaces CORS settings.`,
+      );
+    }
+
+    throw error;
+  }
+}
+
 export function ShopJobsRoute({ navigate, shopId }) {
   const { session, isPending, activeShop, isLoading } = useShopRoute({
     navigate,
@@ -124,9 +154,12 @@ export function ShopJobsRoute({ navigate, shopId }) {
   const { trigger: createJob, isMutating: isCreatingJob } = useCreateJobMutation({
     shopId: pageShopId,
   });
+  const { trigger: createJobUploadTargets } = useCreateJobUploadTargetsMutation();
   const [newJobName, setNewJobName] = useState("");
   const [newJobCategory, setNewJobCategory] = useState("");
   const [newJobDueDate, setNewJobDueDate] = useState(defaultDueDateInputValue);
+  const [newJobFiles, setNewJobFiles] = useState([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [createJobError, setCreateJobError] = useState("");
   const jobs = jobsData?.jobs ?? [];
   const pageLoading =
@@ -157,6 +190,7 @@ export function ShopJobsRoute({ navigate, shopId }) {
     setNewJobName("");
     setNewJobCategory("");
     setNewJobDueDate(defaultDueDateInputValue());
+    setNewJobFiles([]);
     setCreateJobError("");
   };
 
@@ -174,7 +208,40 @@ export function ShopJobsRoute({ navigate, shopId }) {
       return;
     }
 
+    const oversizedFile = newJobFiles.find((file) => file.size > MAX_UPLOAD_FILE_SIZE_BYTES);
+    if (oversizedFile) {
+      setCreateJobError(`"${oversizedFile.name}" exceeds the 1 GB upload limit.`);
+      return;
+    }
+
     try {
+      if (newJobFiles.length > 0) {
+        setIsUploadingFiles(true);
+
+        try {
+          const uploadTargetsResult = await createJobUploadTargets({
+            shopId: activeShop.id,
+            files: newJobFiles.map((file) => ({
+              name: file.name,
+              size: file.size,
+              contentType: file.type || undefined,
+            })),
+          });
+
+          if (uploadTargetsResult.uploads.length !== newJobFiles.length) {
+            throw new Error("Upload target count mismatch.");
+          }
+
+          await Promise.all(
+            uploadTargetsResult.uploads.map((uploadTarget, index) =>
+              uploadFileToTarget(newJobFiles[index], uploadTarget),
+            ),
+          );
+        } finally {
+          setIsUploadingFiles(false);
+        }
+      }
+
       await createJob({
         shopId: activeShop.id,
         name,
@@ -226,8 +293,25 @@ export function ShopJobsRoute({ navigate, shopId }) {
             required
             label="Due date"
           />
-          <Button type="submit" variant="primary" disabled={isCreatingJob} loading={isCreatingJob}>
-            {isCreatingJob ? "Creating..." : "Create job"}
+          <FileUpload
+            label="Files (optional)"
+            helperText="Attach one or more files. Maximum 1 GB per file."
+            multiple
+            files={newJobFiles}
+            onFilesChange={(nextFiles) => {
+              setCreateJobError("");
+              setNewJobFiles(
+                nextFiles.filter((file) => typeof File !== "undefined" && file instanceof File),
+              );
+            }}
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isCreatingJob || isUploadingFiles}
+            loading={isCreatingJob || isUploadingFiles}
+          >
+            {isCreatingJob || isUploadingFiles ? "Creating..." : "Create job"}
           </Button>
           {createJobError ? (
             <Hatch variant="danger" footerHeight={12}>
@@ -284,7 +368,7 @@ export function ShopJobsRoute({ navigate, shopId }) {
           <Button
             variant="primary"
             onClick={() => {
-              setCreateJobError("");
+              resetCreateJobForm();
               setOpen(true);
             }}
           >
