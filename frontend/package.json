@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@jackcrane/ui": "^0.1.14",
+    "@jackcrane/ui": "^0.1.15",
     "@orpc/client": "^1.8.7",
     "@orpc/experimental-react-swr": "^1.8.5",
     "@tabler/icons-react": "^3.37.1",

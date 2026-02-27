@@ -1,0 +1,232 @@
+{
+  "jobs": [
+    {
+      "id": "JOB-4027",
+      "name": "HydroBot Chassis v2",
+      "customer": "Vertex Marine",
+      "category": "Machine + 3D Print",
+      "status": "IN_PRODUCTION",
+      "priority": "High",
+      "dueDate": "2026-03-02",
+      "assignee": "Maya Lopez",
+      "parts": [
+        {
+          "code": "P-001",
+          "name": "Left Chassis Plate",
+          "process": "CNC Mill",
+          "material": "5052 Aluminum",
+          "machine": "Haas VF-2",
+          "quantity": 2,
+          "status": "RUNNING"
+        },
+        {
+          "code": "P-002",
+          "name": "Cable Harness Clip",
+          "process": "FDM Print",
+          "material": "Nylon-CF",
+          "machine": "Prusa XL",
+          "quantity": 12,
+          "status": "QUEUED"
+        },
+        {
+          "code": "P-003",
+          "name": "Front Badge Decal",
+          "process": "Poster Print",
+          "material": "Matte Vinyl",
+          "machine": "Roland SG3",
+          "quantity": 2,
+          "status": "QA"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4024",
+      "name": "Trade Show Backdrop Kit",
+      "customer": "Lumina Solar",
+      "category": "Poster Printing",
+      "status": "QUEUED",
+      "priority": "Medium",
+      "dueDate": "2026-03-08",
+      "assignee": "Andre Kim",
+      "parts": [
+        {
+          "code": "P-004",
+          "name": "Main 10ft Backdrop",
+          "process": "Poster Print",
+          "material": "Poly Banner",
+          "machine": "HP Latex 700",
+          "quantity": 1,
+          "status": "QUEUED"
+        },
+        {
+          "code": "P-005",
+          "name": "Booth Table Wrap",
+          "process": "Poster Print",
+          "material": "Adhesive Fabric",
+          "machine": "HP Latex 700",
+          "quantity": 2,
+          "status": "QUEUED"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4019",
+      "name": "Cafe Menu Lightbox Frames",
+      "customer": "Brewline Coffee",
+      "category": "Machine Shop",
+      "status": "BLOCKED",
+      "priority": "High",
+      "dueDate": "2026-02-25",
+      "assignee": "Priya Shah",
+      "parts": [
+        {
+          "code": "P-006",
+          "name": "Top Frame Rail",
+          "process": "CNC Mill",
+          "material": "6061 Aluminum",
+          "machine": "Haas Mini Mill",
+          "quantity": 6,
+          "status": "BLOCKED"
+        },
+        {
+          "code": "P-007",
+          "name": "Diffuser Clip Set",
+          "process": "SLA Print",
+          "material": "Tough Resin",
+          "machine": "Form 3+",
+          "quantity": 18,
+          "status": "DONE"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4012",
+      "name": "Drone Arm Prototype Batch",
+      "customer": "Arc Aero",
+      "category": "3D Printing",
+      "status": "COMPLETED",
+      "priority": "High",
+      "dueDate": "2026-02-20",
+      "assignee": "Jordan Lee",
+      "parts": [
+        {
+          "code": "P-008",
+          "name": "Arm Core A",
+          "process": "SLS Print",
+          "material": "PA12",
+          "machine": "Fuse 1+",
+          "quantity": 8,
+          "status": "DONE"
+        },
+        {
+          "code": "P-009",
+          "name": "Arm Core B",
+          "process": "SLS Print",
+          "material": "PA12",
+          "machine": "Fuse 1+",
+          "quantity": 8,
+          "status": "DONE"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4031",
+      "name": "Warehouse Safety Signage",
+      "customer": "Northline Logistics",
+      "category": "Poster Printing",
+      "status": "READY_FOR_PICKUP",
+      "priority": "Low",
+      "dueDate": "2026-02-27",
+      "assignee": "Sonia Patel",
+      "parts": [
+        {
+          "code": "P-010",
+          "name": "Aisle Number Set",
+          "process": "Poster Print",
+          "material": "Laminated PVC",
+          "machine": "Epson S80600",
+          "quantity": 30,
+          "status": "QA"
+        },
+        {
+          "code": "P-011",
+          "name": "Forklift Warning Placards",
+          "process": "Poster Print",
+          "material": "Laminated PVC",
+          "machine": "Epson S80600",
+          "quantity": 16,
+          "status": "DONE"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4033",
+      "name": "Custom Fixture Set",
+      "customer": "Atlas Controls",
+      "category": "Machine + 3D Print",
+      "status": "DRAFT",
+      "priority": "Medium",
+      "dueDate": "2026-03-14",
+      "assignee": "Maya Lopez",
+      "parts": [
+        {
+          "code": "P-012",
+          "name": "Fixture Base",
+          "process": "CNC Mill",
+          "material": "Tool Steel",
+          "machine": "Haas VF-2",
+          "quantity": 2,
+          "status": "QUEUED"
+        },
+        {
+          "code": "P-013",
+          "name": "Alignment Insert",
+          "process": "FDM Print",
+          "material": "PETG",
+          "machine": "Bambu X1C",
+          "quantity": 6,
+          "status": "QUEUED"
+        }
+      ]
+    },
+    {
+      "id": "JOB-4022",
+      "name": "Architectural Scale Model",
+      "customer": "Crown Studio",
+      "category": "3D Printing",
+      "status": "IN_PRODUCTION",
+      "priority": "Medium",
+      "dueDate": "2026-03-05",
+      "assignee": "Andre Kim",
+      "parts": [
+        {
+          "code": "P-014",
+          "name": "Tower Block A",
+          "process": "SLA Print",
+          "material": "Grey Resin",
+          "machine": "Form 3+",
+          "quantity": 4,
+          "status": "RUNNING"
+        },
+        {
+          "code": "P-015",
+          "name": "Facade Panel Set",
+          "process": "SLA Print",
+          "material": "Clear Resin",
+          "machine": "Form 3+",
+          "quantity": 10,
+          "status": "QA"
+        },
+        {
+          "code": "P-016",
+          "name": "Site Board Graphic",
+          "process": "Poster Print",
+          "material": "Foam Board",
+          "machine": "Canon Arizona",
+          "quantity": 1,
+          "status": "DONE"
+        }
+      ]
+    }
+  ]
+}

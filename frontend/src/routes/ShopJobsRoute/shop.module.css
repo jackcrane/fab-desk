@@ -1,0 +1,15 @@
+.table {
+  border-collapse: collapse;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 8px;
+}
+
+.table tr.job {
+  border-bottom: 1px solid var(--border-color);
+}
