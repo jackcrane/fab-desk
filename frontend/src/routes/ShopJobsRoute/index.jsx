@@ -215,6 +215,8 @@ export function ShopJobsRoute({ navigate, shopId }) {
     }
 
     try {
+      let uploadedFilesForJob = [];
+
       if (newJobFiles.length > 0) {
         setIsUploadingFiles(true);
 
@@ -237,6 +239,13 @@ export function ShopJobsRoute({ navigate, shopId }) {
               uploadFileToTarget(newJobFiles[index], uploadTarget),
             ),
           );
+
+          uploadedFilesForJob = uploadTargetsResult.uploads.map((uploadTarget, index) => ({
+            fileName: uploadTarget.fileName,
+            objectKey: uploadTarget.objectKey,
+            contentType: newJobFiles[index].type || undefined,
+            size: newJobFiles[index].size,
+          }));
         } finally {
           setIsUploadingFiles(false);
         }
@@ -247,6 +256,7 @@ export function ShopJobsRoute({ navigate, shopId }) {
         name,
         category,
         dueDate: newJobDueDate,
+        uploadedFiles: uploadedFilesForJob,
       });
 
       resetCreateJobForm();

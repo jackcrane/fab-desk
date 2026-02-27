@@ -105,6 +105,17 @@ export const createJobInputSchema = z.object({
   dueDate: z.string().trim().refine(isValidDateOnlyString, {
     message: 'Due date must be a valid date in YYYY-MM-DD format.',
   }),
+  uploadedFiles: z
+    .array(
+      z.object({
+        fileName: z.string().trim().min(1).max(255),
+        objectKey: z.string().trim().min(1).max(1024),
+        contentType: z.string().trim().min(1).max(255).optional(),
+        size: z.number().int().min(1).max(MAX_UPLOAD_FILE_SIZE_BYTES),
+      }),
+    )
+    .max(MAX_UPLOAD_FILE_COUNT)
+    .default([]),
 });
 
 export const updateJobStatusInputSchema = z.object({
@@ -533,35 +544,83 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
     const jobId = randomUUID();
     const now = new Date();
     const dueDate = parseDateOnlyToUtc(input.dueDate);
+    const uploadedFiles = input.uploadedFiles ?? [];
 
-    await prisma.$executeRaw`
-      INSERT INTO "Job" (
-        "id",
-        "shopId",
-        "name",
-        "customerMembershipId",
-        "category",
-        "status",
-        "priority",
-        "dueDate",
-        "assigneeMembershipId",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${jobId},
-        ${input.shopId},
-        ${input.name},
-        ${requesterMembership.membershipId},
-        ${input.category},
-        ${input.status},
-        ${input.priority},
-        ${dueDate},
-        ${null},
-        ${now},
-        ${now}
-      )
-    `;
+    const uploadedFileParts: JobPartSummary[] = uploadedFiles.map((file, index) => {
+      const partCode = `UP-${String(index + 1).padStart(3, '0')}`;
+
+      return {
+        id: randomUUID(),
+        code: partCode,
+        name: file.fileName,
+        process: 'File Upload',
+        material: file.contentType ?? 'application/octet-stream',
+        machine: file.objectKey,
+        quantity: 1,
+        status: 'QUEUED',
+      };
+    });
+
+    await prisma.$transaction([
+      prisma.$executeRaw`
+        INSERT INTO "Job" (
+          "id",
+          "shopId",
+          "name",
+          "customerMembershipId",
+          "category",
+          "status",
+          "priority",
+          "dueDate",
+          "assigneeMembershipId",
+          "createdAt",
+          "updatedAt"
+        )
+        VALUES (
+          ${jobId},
+          ${input.shopId},
+          ${input.name},
+          ${requesterMembership.membershipId},
+          ${input.category},
+          ${input.status},
+          ${input.priority},
+          ${dueDate},
+          ${null},
+          ${now},
+          ${now}
+        )
+      `,
+      ...uploadedFileParts.map((part) =>
+        prisma.$executeRaw`
+          INSERT INTO "JobPart" (
+            "id",
+            "jobId",
+            "code",
+            "name",
+            "process",
+            "material",
+            "machine",
+            "quantity",
+            "status",
+            "createdAt",
+            "updatedAt"
+          )
+          VALUES (
+            ${part.id},
+            ${jobId},
+            ${part.code},
+            ${part.name},
+            ${part.process},
+            ${part.material},
+            ${part.machine},
+            ${part.quantity},
+            ${part.status},
+            ${now},
+            ${now}
+          )
+        `,
+      ),
+    ]);
 
     return {
       id: jobId,
@@ -572,7 +631,7 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
       priority: input.priority,
       dueDate: toIsoDate(dueDate),
       assignee: 'Unassigned',
-      parts: [],
+      parts: uploadedFileParts,
     };
   } catch (error) {
     if (isMissingRelationError(error)) {
