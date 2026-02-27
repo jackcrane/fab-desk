@@ -12,6 +12,15 @@ import {
   updateShopBasicSettingsForUser,
   updateShopBasicSettingsInputSchema,
 } from './shops';
+import {
+  JobNotFoundForUserError,
+  JobsSchemaNotReadyError,
+  listShopJobsForUser,
+  listShopJobsInputSchema,
+  ShopNotFoundForUserError as JobShopNotFoundForUserError,
+  updateJobStatusForUser,
+  updateJobStatusInputSchema,
+} from './jobs';
 
 type RouterContext = {
   session: unknown;
@@ -120,12 +129,58 @@ const updateAccessSettings = protectedProcedure
     }
   });
 
+const listByShop = protectedProcedure
+  .input(listShopJobsInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await listShopJobsForUser(context.userId, input.shopId);
+    } catch (error) {
+      if (error instanceof JobShopNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof JobsSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
+const updateStatus = protectedProcedure
+  .input(updateJobStatusInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await updateJobStatusForUser(context.userId, input.shopId, input.jobId, input.status);
+    } catch (error) {
+      if (error instanceof JobShopNotFoundForUserError || error instanceof JobNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof JobsSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
 export const router = {
   shop: {
     list,
     create,
     updateBasicSettings,
     updateAccessSettings,
+  },
+  job: {
+    listByShop,
+    updateStatus,
   },
 };
 

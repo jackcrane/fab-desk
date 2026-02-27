@@ -99,17 +99,18 @@ model SamlProviderConfig {
 }
 
 model Shop {
-  id                  String       @id @default(cuid())
-  name                String
-  organization        String
-  primaryContactEmail String?
-  membershipPolicy    String       @default("invite-only")
+  id                    String       @id @default(cuid())
+  name                  String
+  organization          String
+  primaryContactEmail   String?
+  membershipPolicy      String       @default("invite-only")
   membershipEmailDomain String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  createdById         String
-  createdBy           User         @relation("ShopCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  memberships         Membership[]
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  createdById           String
+  createdBy             User         @relation("ShopCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  memberships           Membership[]
+  jobs                  Job[]
 
   @@index([createdById])
 }
@@ -126,6 +127,43 @@ model Membership {
 
   @@unique([userId, shopId])
   @@index([shopId])
+}
+
+model Job {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String
+  customer  String
+  category  String
+  status    String
+  priority  String
+  dueDate   DateTime
+  assignee  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  parts     JobPart[]
+
+  @@index([shopId])
+  @@index([shopId, dueDate])
+}
+
+model JobPart {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  code      String
+  name      String
+  process   String
+  material  String
+  machine   String
+  quantity  Int      @default(1)
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([jobId, code])
+  @@index([jobId])
 }
 
 enum MembershipRole {

@@ -4,6 +4,10 @@
   width: 100%;
 }
 
+.info {
+  margin-top: 12px;
+}
+
 .table th,
 .table td {
   text-align: left;
@@ -12,4 +16,9 @@
 
 .table tr.job {
   border-bottom: 1px solid var(--border-color);
+}
+
+.empty {
+  text-align: center;
+  color: var(--secondary-color-500);
 }
