@@ -18,6 +18,8 @@ import {
 } from "../../lib/jobs-orpc";
 import styles from "./shop.module.css";
 import { Flex } from "../../components/flex";
+import { Table } from "../../components/table";
+const MAX_UPLOAD_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
 
 const STATUS_OPTIONS = [
   { label: "Draft", value: "DRAFT" },
@@ -51,7 +53,6 @@ const PRIORITY_LABELS = {
   MEDIUM: "Medium",
   LOW: "Low",
 };
-const MAX_UPLOAD_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
 
 function formatPriorityLabel(priority) {
   return PRIORITY_LABELS[priority] ?? priority;
@@ -192,10 +193,6 @@ export function ShopJobsRoute({ navigate, shopId }) {
     }
 
     navigate(`/shop/${activeShop.id}/jobs/${encodeURIComponent(jobId)}`);
-  };
-
-  const onStopRowNavigation = (event) => {
-    event.stopPropagation();
   };
 
   const resetCreateJobForm = () => {
@@ -344,6 +341,47 @@ export function ShopJobsRoute({ navigate, shopId }) {
       </form>
     ),
   });
+  const columns = [
+    {
+      key: "status",
+      header: "Status",
+      stopRowClick: true,
+      render: (job) => (
+        <JobStatusPicker
+          job={job}
+          isUpdating={isUpdatingJobStatus && updatingJobId === job.id}
+          onStatusChange={onUpdateJobStatus}
+        />
+      ),
+    },
+    { key: "name", header: "Job" },
+    { key: "customer", header: "Customer/Requestor" },
+    {
+      key: "priority",
+      header: "Priority",
+      render: (job) => (
+        <>
+          <div
+            style={{
+              color: formatPriorityTone(job.priority),
+              width: 12,
+              display: "inline-block",
+              textAlign: "right",
+            }}
+          >
+            {formatPrioritySymbol(job.priority)}
+          </div>{" "}
+          {formatPriorityLabel(job.priority)}
+        </>
+      ),
+    },
+    {
+      key: "dueDate",
+      header: "Due Date",
+      render: (job) => formatDueDateLabel(job.dueDate),
+    },
+    { key: "assignee", header: "Assignee" },
+  ];
 
   return (
     <Page
@@ -409,77 +447,12 @@ export function ShopJobsRoute({ navigate, shopId }) {
             Only list view is wired to backend right now.
           </p>
         ) : (
-          <table className={styles.table}>
-            <thead className="jcui_chamfer">
-              <tr className="jcui_hatch">
-                <th>Status</th>
-                <th>Job</th>
-                <th>Customer/Requestor</th>
-                <th>Priority</th>
-                <th>Due Date</th>
-                <th>Assignee</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.length === 0 ? (
-                <tr className={styles.job}>
-                  <td colSpan={6} className={styles.empty}>
-                    No jobs in this shop yet.
-                  </td>
-                </tr>
-              ) : (
-                jobs.map((job) => (
-                  <tr
-                    key={job.id}
-                    className={`${styles.job} ${styles.jobClickable}`}
-                    onClick={() => onOpenJobDetail(job.id)}
-                    onKeyDown={(event) => {
-                      if (event.target !== event.currentTarget) {
-                        return;
-                      }
-
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onOpenJobDetail(job.id);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <td
-                      onClick={onStopRowNavigation}
-                      onPointerDown={onStopRowNavigation}
-                    >
-                      <JobStatusPicker
-                        job={job}
-                        isUpdating={
-                          isUpdatingJobStatus && updatingJobId === job.id
-                        }
-                        onStatusChange={onUpdateJobStatus}
-                      />
-                    </td>
-                    <td>{job.name}</td>
-                    <td>{job.customer}</td>
-                    <td>
-                      <div
-                        style={{
-                          color: formatPriorityTone(job.priority),
-                          width: 12,
-                          display: "inline-block",
-                          textAlign: "right",
-                        }}
-                      >
-                        {formatPrioritySymbol(job.priority)}
-                      </div>{" "}
-                      {formatPriorityLabel(job.priority)}
-                    </td>
-                    <td>{formatDueDateLabel(job.dueDate)}</td>
-                    <td>{job.assignee}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <Table
+            rows={jobs}
+            columns={columns}
+            onClickRow={(job) => onOpenJobDetail(job.id)}
+            emptyMessage="No jobs in this shop yet."
+          />
         )}
       </main>
     </Page>
