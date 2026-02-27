@@ -116,36 +116,42 @@ model Shop {
 }
 
 model Membership {
-  id        String         @id @default(cuid())
-  role      MembershipRole
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  userId    String
-  shopId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shop      Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id           String         @id @default(cuid())
+  role         MembershipRole
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  userId       String
+  shopId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  requestedJobs Job[]         @relation("JobCustomerMembership")
+  assignedJobs  Job[]         @relation("JobAssigneeMembership")
 
   @@unique([userId, shopId])
   @@index([shopId])
 }
 
 model Job {
-  id        String    @id @default(cuid())
-  shopId    String
-  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name      String
-  customer  String
-  category  String
-  status    String
-  priority  String
-  dueDate   DateTime
-  assignee  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  parts     JobPart[]
+  id                   String     @id @default(cuid())
+  shopId               String
+  shop                 Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name                 String
+  customerMembershipId String
+  customerMembership   Membership @relation("JobCustomerMembership", fields: [customerMembershipId], references: [id], onDelete: Restrict)
+  category             String
+  status               String
+  priority             String
+  dueDate              DateTime
+  assigneeMembershipId String?
+  assigneeMembership   Membership? @relation("JobAssigneeMembership", fields: [assigneeMembershipId], references: [id], onDelete: Restrict)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  parts                JobPart[]
 
   @@index([shopId])
   @@index([shopId, dueDate])
+  @@index([customerMembershipId])
+  @@index([assigneeMembershipId])
 }
 
 model JobPart {
@@ -168,5 +174,6 @@ model JobPart {
 
 enum MembershipRole {
   ADMIN
+  STAFF
   MEMBER
 }

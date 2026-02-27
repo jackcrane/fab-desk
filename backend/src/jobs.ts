@@ -82,14 +82,12 @@ export const listShopJobsInputSchema = z.object({
 export const createJobInputSchema = z.object({
   shopId: z.string().trim().min(1),
   name: z.string().trim().min(1).max(160),
-  customer: z.string().trim().min(1).max(160),
   category: z.string().trim().min(1).max(160),
   status: jobStatusSchema.default('DRAFT'),
   priority: jobPrioritySchema.default('MEDIUM'),
   dueDate: z.string().trim().refine(isValidDateOnlyString, {
     message: 'Due date must be a valid date in YYYY-MM-DD format.',
   }),
-  assignee: z.string().trim().min(1).max(160),
 });
 
 export const updateJobStatusInputSchema = z.object({
@@ -121,6 +119,11 @@ type JobPartRow = {
   quantity: number;
   status: JobPartStatus;
   createdAt: Date;
+};
+
+type ShopMembershipForJobRow = {
+  membershipId: string;
+  displayName: string;
 };
 
 export class ShopNotFoundForUserError extends Error {
@@ -175,18 +178,22 @@ function isMissingRelationError(error: unknown): boolean {
 async function listShopJobsRaw(shopId: string): Promise<ShopJobsList> {
   const jobs = await prisma.$queryRaw<JobRow[]>`
     SELECT
-      "id",
-      "name",
-      "customer",
-      "category",
-      "status",
-      "priority",
-      "dueDate",
-      "assignee",
-      "createdAt"
-    FROM "Job"
-    WHERE "shopId" = ${shopId}
-    ORDER BY "dueDate" ASC, "createdAt" ASC
+      j."id",
+      j."name",
+      COALESCE(NULLIF(BTRIM(customerUser."name"), ''), customerUser."email") AS "customer",
+      j."category",
+      j."status",
+      j."priority",
+      j."dueDate",
+      COALESCE(NULLIF(BTRIM(assigneeUser."name"), ''), assigneeUser."email", 'Unassigned') AS "assignee",
+      j."createdAt"
+    FROM "Job" j
+    INNER JOIN "Membership" customerMembership ON customerMembership."id" = j."customerMembershipId"
+    INNER JOIN "User" customerUser ON customerUser."id" = customerMembership."userId"
+    LEFT JOIN "Membership" assigneeMembership ON assigneeMembership."id" = j."assigneeMembershipId"
+    LEFT JOIN "User" assigneeUser ON assigneeUser."id" = assigneeMembership."userId"
+    WHERE j."shopId" = ${shopId}
+    ORDER BY j."dueDate" ASC, j."createdAt" ASC
   `;
 
   if (jobs.length === 0) {
@@ -258,6 +265,26 @@ export async function listShopJobsForUser(userId: string, shopId: string): Promi
 
 export type CreateJobInput = z.infer<typeof createJobInputSchema>;
 
+async function getRequesterMembership(userId: string, shopId: string): Promise<ShopMembershipForJobRow> {
+  const requesterRows = await prisma.$queryRaw<ShopMembershipForJobRow[]>`
+    SELECT
+      m."id" AS "membershipId",
+      COALESCE(NULLIF(BTRIM(u."name"), ''), u."email") AS "displayName"
+    FROM "Membership" m
+    INNER JOIN "User" u ON u."id" = m."userId"
+    WHERE m."userId" = ${userId}
+      AND m."shopId" = ${shopId}
+    LIMIT 1
+  `;
+
+  const requester = requesterRows[0];
+  if (!requester) {
+    throw new ShopNotFoundForUserError();
+  }
+
+  return requester;
+}
+
 export async function updateJobStatusForUser(
   userId: string,
   shopId: string,
@@ -308,7 +335,7 @@ export async function updateJobStatusForUser(
 
 export async function createJobForUser(userId: string, input: CreateJobInput): Promise<ShopJobSummary> {
   try {
-    await ensureShopMembership(userId, input.shopId);
+    const requesterMembership = await getRequesterMembership(userId, input.shopId);
 
     const jobId = randomUUID();
     const now = new Date();
@@ -319,12 +346,12 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
         "id",
         "shopId",
         "name",
-        "customer",
+        "customerMembershipId",
         "category",
         "status",
         "priority",
         "dueDate",
-        "assignee",
+        "assigneeMembershipId",
         "createdAt",
         "updatedAt"
       )
@@ -332,12 +359,12 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
         ${jobId},
         ${input.shopId},
         ${input.name},
-        ${input.customer},
+        ${requesterMembership.membershipId},
         ${input.category},
         ${input.status},
         ${input.priority},
         ${dueDate},
-        ${input.assignee},
+        ${null},
         ${now},
         ${now}
       )
@@ -346,12 +373,12 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
     return {
       id: jobId,
       name: input.name,
-      customer: input.customer,
+      customer: requesterMembership.displayName,
       category: input.category,
       status: input.status,
       priority: input.priority,
       dueDate: toIsoDate(dueDate),
-      assignee: input.assignee,
+      assignee: 'Unassigned',
       parts: [],
     };
   } catch (error) {

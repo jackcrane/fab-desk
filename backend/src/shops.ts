@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { prisma } from './db';
 
-type MembershipRole = 'ADMIN' | 'MEMBER';
+type MembershipRole = 'ADMIN' | 'STAFF' | 'MEMBER';
 type MembershipPolicy = 'invite-only' | 'domain';
 
 const membershipPolicySchema = z.enum(['invite-only', 'domain']);

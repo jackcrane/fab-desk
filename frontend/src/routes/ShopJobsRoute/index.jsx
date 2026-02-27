@@ -169,10 +169,6 @@ export function ShopJobsRoute({ navigate, shopId }) {
 
     const name = newJobName.trim();
     const category = newJobCategory.trim();
-    const requestorName = session?.user?.name?.trim();
-    const requestorEmail = session?.user?.email?.trim();
-    const requestorLabel = requestorName || requestorEmail || "Internal Request";
-
     if (!name || !category || !newJobDueDate) {
       setCreateJobError("All fields are required.");
       return;
@@ -182,10 +178,8 @@ export function ShopJobsRoute({ navigate, shopId }) {
       await createJob({
         shopId: activeShop.id,
         name,
-        customer: requestorLabel,
         category,
         dueDate: newJobDueDate,
-        assignee: requestorLabel,
       });
 
       resetCreateJobForm();
