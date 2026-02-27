@@ -186,6 +186,18 @@ export function ShopJobsRoute({ navigate, shopId }) {
     }
   };
 
+  const onOpenJobDetail = (jobId) => {
+    if (!activeShop || !jobId) {
+      return;
+    }
+
+    navigate(`/shop/${activeShop.id}/jobs/${encodeURIComponent(jobId)}`);
+  };
+
+  const onStopRowNavigation = (event) => {
+    event.stopPropagation();
+  };
+
   const resetCreateJobForm = () => {
     setNewJobName("");
     setNewJobCategory("");
@@ -417,8 +429,27 @@ export function ShopJobsRoute({ navigate, shopId }) {
                 </tr>
               ) : (
                 jobs.map((job) => (
-                  <tr key={job.id} className={styles.job}>
-                    <td>
+                  <tr
+                    key={job.id}
+                    className={`${styles.job} ${styles.jobClickable}`}
+                    onClick={() => onOpenJobDetail(job.id)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) {
+                        return;
+                      }
+
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenJobDetail(job.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <td
+                      onClick={onStopRowNavigation}
+                      onPointerDown={onStopRowNavigation}
+                    >
                       <JobStatusPicker
                         job={job}
                         isUpdating={

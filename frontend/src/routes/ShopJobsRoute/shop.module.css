@@ -18,6 +18,19 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.table tr.jobClickable {
+  cursor: pointer;
+}
+
+.table tr.jobClickable:hover {
+  background-color: var(--secondary-color-100);
+}
+
+.table tr.jobClickable:focus-visible {
+  outline: 2px solid var(--primary-color-500);
+  outline-offset: -2px;
+}
+
 .empty {
   text-align: center;
   color: var(--secondary-color-500);
