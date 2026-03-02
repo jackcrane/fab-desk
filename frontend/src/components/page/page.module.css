@@ -41,6 +41,15 @@
   width: 100%;
 }
 
+.innerContent > main {
+  flex: 1;
+}
+
+.innerContent > main > hr {
+  transform: translateX(-16px);
+  width: calc(100% + 32px);
+}
+
 .sidenav {
   background-color: var(--background-color);
   border-right: 1px solid var(--border-color);

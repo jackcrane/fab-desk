@@ -63,6 +63,44 @@ export function useCreateShopProcessMutation(options = {}) {
   );
 }
 
+export function useUpdateShopProcessMutation(options = {}) {
+  const { shopId, onSuccess, ...restOptions } = options;
+
+  return useSWRMutation(
+    orpc.shop.updateProcess.key(),
+    orpc.shop.updateProcess.mutator(),
+    {
+      ...restOptions,
+      onSuccess: (data, key, config) => {
+        const effectiveShopId = config.arg?.shopId ?? shopId;
+        if (effectiveShopId) {
+          void revalidateProcessCatalogQuery(effectiveShopId);
+        }
+        onSuccess?.(data, key, config);
+      },
+    },
+  );
+}
+
+export function useDeleteShopProcessMutation(options = {}) {
+  const { shopId, onSuccess, ...restOptions } = options;
+
+  return useSWRMutation(
+    orpc.shop.deleteProcess.key(),
+    orpc.shop.deleteProcess.mutator(),
+    {
+      ...restOptions,
+      onSuccess: (data, key, config) => {
+        const effectiveShopId = config.arg?.shopId ?? shopId;
+        if (effectiveShopId) {
+          void revalidateProcessCatalogQuery(effectiveShopId);
+        }
+        onSuccess?.(data, key, config);
+      },
+    },
+  );
+}
+
 export function useCreateShopProcessResourceMutation(options = {}) {
   const { shopId, onSuccess, ...restOptions } = options;
 

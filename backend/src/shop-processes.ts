@@ -21,6 +21,27 @@ export const createShopProcessInputSchema = z.object({
   ),
 });
 
+export const updateShopProcessInputSchema = z.object({
+  shopId: z.string().trim().min(1),
+  processId: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(120),
+  description: z.preprocess(
+    (value) => {
+      if (typeof value === 'string' && value.trim().length === 0) {
+        return undefined;
+      }
+
+      return value;
+    },
+    z.string().trim().max(1000).optional(),
+  ),
+});
+
+export const deleteShopProcessInputSchema = z.object({
+  shopId: z.string().trim().min(1),
+  processId: z.string().trim().min(1),
+});
+
 const processCostInputSchema = z
   .number()
   .finite()
@@ -245,6 +266,8 @@ async function getShopMembershipRole(
 }
 
 export type CreateShopProcessInput = z.infer<typeof createShopProcessInputSchema>;
+export type UpdateShopProcessInput = z.infer<typeof updateShopProcessInputSchema>;
+export type DeleteShopProcessInput = z.infer<typeof deleteShopProcessInputSchema>;
 export type CreateShopProcessResourceInput = z.infer<typeof createShopProcessResourceInputSchema>;
 export type CreateShopProcessMaterialInput = z.infer<typeof createShopProcessMaterialInputSchema>;
 
@@ -294,6 +317,87 @@ export async function createShopProcessForUser(
     }
     if (isUniqueConstraintError(error)) {
       throw new ShopProcessNameAlreadyExistsError();
+    }
+
+    throw error;
+  }
+}
+
+export async function updateShopProcessForUser(
+  userId: string,
+  input: UpdateShopProcessInput,
+): Promise<ShopProcessCatalogItem> {
+  try {
+    const membershipRole = await getShopMembershipRole(userId, input.shopId);
+    if (membershipRole !== 'ADMIN') {
+      throw new ShopProcessEditForbiddenError();
+    }
+
+    const now = new Date();
+    const description = input.description ?? null;
+    const updatedRowCount = await prisma.$executeRaw`
+      UPDATE "ShopProcess"
+      SET
+        "name" = ${input.name},
+        "description" = ${description},
+        "updatedAt" = ${now}
+      WHERE "id" = ${input.processId}
+        AND "shopId" = ${input.shopId}
+    `;
+
+    if (updatedRowCount === 0) {
+      throw new ShopProcessNotFoundForUserError();
+    }
+
+    return {
+      id: input.processId,
+      name: input.name,
+      description: description ?? '',
+      resources: [],
+      materials: [],
+    };
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      throw new ShopProcessCatalogSchemaNotReadyError();
+    }
+    if (isUniqueConstraintError(error)) {
+      throw new ShopProcessNameAlreadyExistsError();
+    }
+
+    throw error;
+  }
+}
+
+export interface DeleteShopProcessResult {
+  id: string;
+}
+
+export async function deleteShopProcessForUser(
+  userId: string,
+  input: DeleteShopProcessInput,
+): Promise<DeleteShopProcessResult> {
+  try {
+    const membershipRole = await getShopMembershipRole(userId, input.shopId);
+    if (membershipRole !== 'ADMIN') {
+      throw new ShopProcessEditForbiddenError();
+    }
+
+    const deletedRowCount = await prisma.$executeRaw`
+      DELETE FROM "ShopProcess"
+      WHERE "id" = ${input.processId}
+        AND "shopId" = ${input.shopId}
+    `;
+
+    if (deletedRowCount === 0) {
+      throw new ShopProcessNotFoundForUserError();
+    }
+
+    return {
+      id: input.processId,
+    };
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      throw new ShopProcessCatalogSchemaNotReadyError();
     }
 
     throw error;

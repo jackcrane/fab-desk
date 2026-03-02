@@ -107,7 +107,9 @@ function formatDueDateLabel(dueDate) {
 
 async function uploadFileToTarget(file, uploadTarget) {
   const formData = new FormData();
-  for (const [fieldName, fieldValue] of Object.entries(uploadTarget.uploadFields ?? {})) {
+  for (const [fieldName, fieldValue] of Object.entries(
+    uploadTarget.uploadFields ?? {},
+  )) {
     formData.append(fieldName, fieldValue);
   }
   formData.append("file", file, file.name);
@@ -152,10 +154,12 @@ export function ShopJobsRoute({ navigate, shopId }) {
     useUpdateJobStatusMutation({
       shopId: pageShopId,
     });
-  const { trigger: createJob, isMutating: isCreatingJob } = useCreateJobMutation({
-    shopId: pageShopId,
-  });
-  const { trigger: createJobUploadTargets } = useCreateJobUploadTargetsMutation();
+  const { trigger: createJob, isMutating: isCreatingJob } =
+    useCreateJobMutation({
+      shopId: pageShopId,
+    });
+  const { trigger: createJobUploadTargets } =
+    useCreateJobUploadTargetsMutation();
   const [newJobName, setNewJobName] = useState("");
   const [newJobCategory, setNewJobCategory] = useState("");
   const [newJobDueDate, setNewJobDueDate] = useState(defaultDueDateInputValue);
@@ -217,9 +221,13 @@ export function ShopJobsRoute({ navigate, shopId }) {
       return;
     }
 
-    const oversizedFile = newJobFiles.find((file) => file.size > MAX_UPLOAD_FILE_SIZE_BYTES);
+    const oversizedFile = newJobFiles.find(
+      (file) => file.size > MAX_UPLOAD_FILE_SIZE_BYTES,
+    );
     if (oversizedFile) {
-      setCreateJobError(`"${oversizedFile.name}" exceeds the 1 GB upload limit.`);
+      setCreateJobError(
+        `"${oversizedFile.name}" exceeds the 1 GB upload limit.`,
+      );
       return;
     }
 
@@ -249,12 +257,14 @@ export function ShopJobsRoute({ navigate, shopId }) {
             ),
           );
 
-          uploadedFilesForJob = uploadTargetsResult.uploads.map((uploadTarget, index) => ({
-            fileName: uploadTarget.fileName,
-            objectKey: uploadTarget.objectKey,
-            contentType: newJobFiles[index].type || undefined,
-            size: newJobFiles[index].size,
-          }));
+          uploadedFilesForJob = uploadTargetsResult.uploads.map(
+            (uploadTarget, index) => ({
+              fileName: uploadTarget.fileName,
+              objectKey: uploadTarget.objectKey,
+              contentType: newJobFiles[index].type || undefined,
+              size: newJobFiles[index].size,
+            }),
+          );
         } finally {
           setIsUploadingFiles(false);
         }
@@ -320,7 +330,9 @@ export function ShopJobsRoute({ navigate, shopId }) {
             onFilesChange={(nextFiles) => {
               setCreateJobError("");
               setNewJobFiles(
-                nextFiles.filter((file) => typeof File !== "undefined" && file instanceof File),
+                nextFiles.filter(
+                  (file) => typeof File !== "undefined" && file instanceof File,
+                ),
               );
             }}
           />
@@ -442,10 +454,10 @@ export function ShopJobsRoute({ navigate, shopId }) {
           </Hatch>
         ) : null}
 
+        <hr />
+
         {viewMode !== "list" ? (
-          <p className={styles.info}>
-            Only list view is wired to backend right now.
-          </p>
+          <p className={styles.info}>Sorry, this view is not available yet.</p>
         ) : (
           <Table
             rows={jobs}

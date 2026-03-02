@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Hatch, Input, useModal } from "@jackcrane/ui";
 import { Page, sidenavItems } from "../components/page";
 import { useShopRoute } from "./useShopRoute";
@@ -27,6 +27,11 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
   const [newProcessName, setNewProcessName] = useState("");
   const [newProcessDescription, setNewProcessDescription] = useState("");
   const [createProcessError, setCreateProcessError] = useState("");
+  const [collapsedByProcessId, setCollapsedByProcessId] = useState({});
+  const [newestProcessId, setNewestProcessId] = useState(null);
+  const [highlightedProcessId, setHighlightedProcessId] = useState(null);
+  const [pendingCreatedProcess, setPendingCreatedProcess] = useState(false);
+  const previousProcessIdsRef = useRef([]);
   const { trigger: createShopProcess, isMutating: isCreatingProcess } =
     useCreateShopProcessMutation({
       shopId: pageShopId,
@@ -34,10 +39,68 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
 
   const canEdit = activeShop?.role === "ADMIN";
   const processes = processCatalog?.processes ?? [];
+  const orderedProcesses = useMemo(() => {
+    if (!newestProcessId) {
+      return processes;
+    }
+
+    const newestProcess = processes.find(
+      (process) => process.id === newestProcessId,
+    );
+    if (!newestProcess) {
+      return processes;
+    }
+
+    return [
+      newestProcess,
+      ...processes.filter((process) => process.id !== newestProcessId),
+    ];
+  }, [newestProcessId, processes]);
   const pageLoading =
     isLoading ||
     !activeShop ||
     (!!activeShop && isLoadingProcessCatalog && !processCatalog);
+
+  useEffect(() => {
+    if (!highlightedProcessId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedProcessId((currentId) =>
+        currentId === highlightedProcessId ? null : currentId,
+      );
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [highlightedProcessId]);
+
+  useEffect(() => {
+    const previousProcessIds = previousProcessIdsRef.current;
+    const currentProcessIds = processes.map((process) => process.id);
+
+    if (pendingCreatedProcess) {
+      const previousIdSet = new Set(previousProcessIds);
+      const addedProcessIds = currentProcessIds.filter(
+        (processId) => !previousIdSet.has(processId),
+      );
+
+      if (addedProcessIds.length > 0) {
+        const newestDetectedProcessId = addedProcessIds[addedProcessIds.length - 1];
+        setNewestProcessId(newestDetectedProcessId);
+        setHighlightedProcessId(newestDetectedProcessId);
+        setCollapsedByProcessId((currentState) => ({
+          ...currentState,
+          [newestDetectedProcessId]: false,
+        }));
+        setPendingCreatedProcess(false);
+      }
+    }
+
+    previousProcessIdsRef.current = currentProcessIds;
+  }, [pendingCreatedProcess, processes]);
 
   if (!isPending && !session) {
     return null;
@@ -47,6 +110,11 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
     setNewProcessName("");
     setNewProcessDescription("");
     setCreateProcessError("");
+  };
+
+  const openCreateProcessModal = () => {
+    resetCreateProcessForm();
+    setOpen(true);
   };
 
   const onCreateProcess = async () => {
@@ -70,15 +138,28 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
     }
 
     try {
-      await createShopProcess({
+      setPendingCreatedProcess(true);
+      const createdProcess = await createShopProcess({
         shopId: activeShop.id,
         name,
         description: description || undefined,
       });
+      const createdProcessId = createdProcess?.id;
+
+      if (createdProcessId) {
+        setNewestProcessId(createdProcessId);
+        setHighlightedProcessId(createdProcessId);
+        setCollapsedByProcessId((currentState) => ({
+          ...currentState,
+          [createdProcessId]: false,
+        }));
+        setPendingCreatedProcess(false);
+      }
 
       resetCreateProcessForm();
       setOpen(false);
     } catch (error) {
+      setPendingCreatedProcess(false);
       setCreateProcessError(error?.message ?? "Unable to create process.");
     }
   };
@@ -179,6 +260,14 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
             a high-level category of work, such as "FDM 3D Printing", "CNC
             Machining", or "Labor"
           </p>
+          <Button
+            onClick={openCreateProcessModal}
+            disabled={!canEdit}
+          >
+            Create a new process
+          </Button>
+
+          <hr />
 
           {processCatalogError ? (
             <Hatch variant="danger" footerHeight={12}>
@@ -203,10 +292,7 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
               </p>
               <Button
                 variant="primary"
-                onClick={() => {
-                  resetCreateProcessForm();
-                  setOpen(true);
-                }}
+                onClick={openCreateProcessModal}
                 disabled={!canEdit}
               >
                 Create a new process
@@ -215,12 +301,28 @@ export function ShopProcessesResourcesRoute({ navigate, shopId }) {
           ) : null}
 
           <Flex direction="column" gap={2}>
-            {processes.map((process) => (
+            {orderedProcesses.map((process) => (
               <ProcessCard
                 key={process.id}
                 shopId={activeShop.id}
                 process={process}
                 canEdit={canEdit}
+                collapsed={
+                  process.id in collapsedByProcessId
+                    ? collapsedByProcessId[process.id]
+                    : orderedProcesses.length === 1
+                      ? false
+                      : true
+                }
+                onCollapseChange={(nextCollapsedState) => {
+                  setCollapsedByProcessId((currentState) => ({
+                    ...currentState,
+                    [process.id]: nextCollapsedState,
+                  }));
+                }}
+                variant={
+                  highlightedProcessId === process.id ? "primary" : undefined
+                }
               />
             ))}
           </Flex>
