@@ -16,10 +16,15 @@ import {
   useShopJobsQuery,
   useUpdateJobStatusMutation,
 } from "../../lib/jobs-orpc";
+import { useShopProcessCatalogQuery } from "../../lib/shops-orpc";
 import styles from "./shop.module.css";
 import { Flex } from "../../components/flex";
 import { Table } from "../../components/table";
 const MAX_UPLOAD_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
+const OTHER_SELECT_VALUE = "OTHER";
+const UNSET_PROCESS_SELECT_VALUE = "__SELECT_PROCESS__";
+const UNSET_RESOURCE_SELECT_VALUE = "__SELECT_RESOURCE__";
+const UNSET_MATERIAL_SELECT_VALUE = "__SELECT_MATERIAL__";
 
 const STATUS_OPTIONS = [
   { label: "Draft", value: "DRAFT" },
@@ -160,13 +165,70 @@ export function ShopJobsRoute({ navigate, shopId }) {
     });
   const { trigger: createJobUploadTargets } =
     useCreateJobUploadTargetsMutation();
+  const { data: processCatalog } = useShopProcessCatalogQuery({
+    shopId: pageShopId,
+    enabled: !!activeShop,
+  });
   const [newJobName, setNewJobName] = useState("");
-  const [newJobCategory, setNewJobCategory] = useState("");
+  const [newJobPrimaryProcess, setNewJobPrimaryProcess] = useState(
+    UNSET_PROCESS_SELECT_VALUE,
+  );
+  const [newJobPrimaryResource, setNewJobPrimaryResource] = useState(
+    UNSET_RESOURCE_SELECT_VALUE,
+  );
+  const [newJobPrimaryMaterial, setNewJobPrimaryMaterial] = useState(
+    UNSET_MATERIAL_SELECT_VALUE,
+  );
   const [newJobDueDate, setNewJobDueDate] = useState(defaultDueDateInputValue);
   const [newJobFiles, setNewJobFiles] = useState([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [createJobError, setCreateJobError] = useState("");
   const jobs = jobsData?.jobs ?? [];
+  const processOptions = useMemo(
+    () => [
+      { label: "Select a process", value: UNSET_PROCESS_SELECT_VALUE },
+      ...(processCatalog?.processes ?? []).map((process) => ({
+        label: process.name,
+        value: process.id,
+      })),
+      { label: "Other", value: OTHER_SELECT_VALUE },
+    ],
+    [processCatalog?.processes],
+  );
+  const selectedPrimaryProcess = useMemo(
+    () =>
+      (processCatalog?.processes ?? []).find(
+        (process) => process.id === newJobPrimaryProcess,
+      ) ?? null,
+    [newJobPrimaryProcess, processCatalog?.processes],
+  );
+  const showProcessDetailSelects = !!selectedPrimaryProcess;
+  const hasPrimaryResourceOptions =
+    (selectedPrimaryProcess?.resources?.length ?? 0) > 0;
+  const hasPrimaryMaterialOptions =
+    (selectedPrimaryProcess?.materials?.length ?? 0) > 0;
+  const primaryResourceOptions = useMemo(
+    () => [
+      { label: "Select a resource", value: UNSET_RESOURCE_SELECT_VALUE },
+      ...(selectedPrimaryProcess?.resources ?? []).map((resource) => ({
+        label: resource.name,
+        value: resource.name,
+      })),
+      { label: "Other", value: OTHER_SELECT_VALUE },
+    ],
+    [selectedPrimaryProcess?.resources],
+  );
+  const primaryMaterialOptions = useMemo(
+    () => [
+      { label: "Select a material", value: UNSET_MATERIAL_SELECT_VALUE },
+      ...(selectedPrimaryProcess?.materials ?? []).map((material) => ({
+        label: material.name,
+        value: material.name,
+      })),
+      { label: "Other", value: OTHER_SELECT_VALUE },
+    ],
+    [selectedPrimaryProcess?.materials],
+  );
   const pageLoading =
     isLoading || !activeShop || (!!activeShop && isLoadingJobs && !jobsData);
 
@@ -201,7 +263,9 @@ export function ShopJobsRoute({ navigate, shopId }) {
 
   const resetCreateJobForm = () => {
     setNewJobName("");
-    setNewJobCategory("");
+    setNewJobPrimaryProcess(UNSET_PROCESS_SELECT_VALUE);
+    setNewJobPrimaryResource(UNSET_RESOURCE_SELECT_VALUE);
+    setNewJobPrimaryMaterial(UNSET_MATERIAL_SELECT_VALUE);
     setNewJobDueDate(defaultDueDateInputValue());
     setNewJobFiles([]);
     setCreateJobError("");
@@ -215,11 +279,33 @@ export function ShopJobsRoute({ navigate, shopId }) {
     setCreateJobError("");
 
     const name = newJobName.trim();
-    const category = newJobCategory.trim();
-    if (!name || !category || !newJobDueDate) {
-      setCreateJobError("All fields are required.");
+    if (!name || !newJobDueDate) {
+      setCreateJobError("Job name and due date are required.");
       return;
     }
+
+    const primaryProcess =
+      newJobPrimaryProcess === OTHER_SELECT_VALUE ||
+      newJobPrimaryProcess === UNSET_PROCESS_SELECT_VALUE
+        ? "Other"
+        : selectedPrimaryProcess?.name ?? "Other";
+    const primaryResource =
+      showProcessDetailSelects &&
+      newJobPrimaryResource &&
+      newJobPrimaryResource !== UNSET_RESOURCE_SELECT_VALUE
+        ? newJobPrimaryResource === OTHER_SELECT_VALUE
+          ? "Other"
+          : newJobPrimaryResource
+        : "Other";
+    const primaryMaterial =
+      showProcessDetailSelects &&
+      newJobPrimaryMaterial &&
+      newJobPrimaryMaterial !== UNSET_MATERIAL_SELECT_VALUE
+        ? newJobPrimaryMaterial === OTHER_SELECT_VALUE
+          ? "Other"
+          : newJobPrimaryMaterial
+        : "Other";
+    const category = primaryProcess;
 
     const oversizedFile = newJobFiles.find(
       (file) => file.size > MAX_UPLOAD_FILE_SIZE_BYTES,
@@ -274,6 +360,9 @@ export function ShopJobsRoute({ navigate, shopId }) {
         shopId: activeShop.id,
         name,
         category,
+        primaryProcess,
+        primaryResource,
+        primaryMaterial,
         dueDate: newJobDueDate,
         uploadedFiles: uploadedFilesForJob,
       });
@@ -307,14 +396,43 @@ export function ShopJobsRoute({ navigate, shopId }) {
             label="Job name"
             placeholder="Prototype Fixture Set"
           />
-          <Input
-            type="text"
-            value={newJobCategory}
-            onChange={(event) => setNewJobCategory(event.target.value)}
-            required
-            label="Category"
-            placeholder="Machine Shop"
+          <Select
+            options={processOptions}
+            value={newJobPrimaryProcess}
+            onValueChange={(nextValue) => {
+              setNewJobPrimaryProcess(nextValue);
+              setNewJobPrimaryResource(UNSET_RESOURCE_SELECT_VALUE);
+              setNewJobPrimaryMaterial(UNSET_MATERIAL_SELECT_VALUE);
+              setCreateJobError("");
+            }}
+            label="Primary process"
           />
+          {showProcessDetailSelects ? (
+            <>
+              {hasPrimaryResourceOptions ? (
+                <Select
+                  options={primaryResourceOptions}
+                  value={newJobPrimaryResource}
+                  onValueChange={(nextValue) => {
+                    setNewJobPrimaryResource(nextValue);
+                    setCreateJobError("");
+                  }}
+                  label="Primary resource"
+                />
+              ) : null}
+              {hasPrimaryMaterialOptions ? (
+                <Select
+                  options={primaryMaterialOptions}
+                  value={newJobPrimaryMaterial}
+                  onValueChange={(nextValue) => {
+                    setNewJobPrimaryMaterial(nextValue);
+                    setCreateJobError("");
+                  }}
+                  label="Primary material"
+                />
+              ) : null}
+            </>
+          ) : null}
           <Input
             type="date"
             value={newJobDueDate}

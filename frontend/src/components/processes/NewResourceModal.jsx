@@ -136,7 +136,7 @@ export function NewResourceModal({ shopId, processId, canEdit }) {
             }}
             required
             label="Unit"
-            placeholder="hour"
+            placeholder="hour / day / task"
             disabled={!canEdit || isCreatingResource}
           />
           <Input

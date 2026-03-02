@@ -140,6 +140,9 @@ model Job {
   customerMembershipId String
   customerMembership   Membership @relation("JobCustomerMembership", fields: [customerMembershipId], references: [id], onDelete: Restrict)
   category             String
+  primaryProcess       String     @default("Other")
+  primaryResource      String     @default("Other")
+  primaryMaterial      String     @default("Other")
   status               String
   priority             String
   dueDate              DateTime

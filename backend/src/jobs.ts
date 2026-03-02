@@ -35,6 +35,9 @@ export interface ShopJobSummary {
   name: string;
   customer: string;
   category: string;
+  primaryProcess: string;
+  primaryResource: string;
+  primaryMaterial: string;
   status: JobStatus;
   priority: JobPriority;
   dueDate: string;
@@ -100,6 +103,9 @@ export const createJobInputSchema = z.object({
   shopId: z.string().trim().min(1),
   name: z.string().trim().min(1).max(160),
   category: z.string().trim().min(1).max(160),
+  primaryProcess: z.string().trim().min(1).max(160).default('Other'),
+  primaryResource: z.string().trim().min(1).max(160).default('Other'),
+  primaryMaterial: z.string().trim().min(1).max(160).default('Other'),
   status: jobStatusSchema.default('DRAFT'),
   priority: jobPrioritySchema.default('MEDIUM'),
   dueDate: z.string().trim().refine(isValidDateOnlyString, {
@@ -140,6 +146,9 @@ type JobRow = {
   name: string;
   customer: string;
   category: string;
+  primaryProcess: string;
+  primaryResource: string;
+  primaryMaterial: string;
   status: JobStatus;
   priority: JobPriority;
   dueDate: Date;
@@ -202,9 +211,7 @@ export class JobNotFoundForUserError extends Error {
 
 export class JobsSchemaNotReadyError extends Error {
   constructor() {
-    super(
-      'Jobs tables are not available yet. Run Prisma migration + generate for backend before using jobs APIs.',
-    );
+    super('Jobs schema is not available yet. Run pending database schema updates before using jobs APIs.');
     this.name = 'JobsSchemaNotReadyError';
   }
 }
@@ -329,7 +336,8 @@ function isMissingRelationError(error: unknown): boolean {
     return false;
   }
 
-  return (error as { code?: unknown }).code === '42P01';
+  const code = (error as { code?: unknown }).code;
+  return code === '42P01' || code === '42703';
 }
 
 async function listShopJobsRaw(shopId: string): Promise<ShopJobsList> {
@@ -339,6 +347,9 @@ async function listShopJobsRaw(shopId: string): Promise<ShopJobsList> {
       j."name",
       COALESCE(NULLIF(BTRIM(customerUser."name"), ''), customerUser."email") AS "customer",
       j."category",
+      COALESCE(NULLIF(BTRIM(j."primaryProcess"), ''), 'Other') AS "primaryProcess",
+      COALESCE(NULLIF(BTRIM(j."primaryResource"), ''), 'Other') AS "primaryResource",
+      COALESCE(NULLIF(BTRIM(j."primaryMaterial"), ''), 'Other') AS "primaryMaterial",
       j."status",
       j."priority",
       j."dueDate",
@@ -398,6 +409,9 @@ async function listShopJobsRaw(shopId: string): Promise<ShopJobsList> {
       name: job.name,
       customer: job.customer,
       category: job.category,
+      primaryProcess: job.primaryProcess,
+      primaryResource: job.primaryResource,
+      primaryMaterial: job.primaryMaterial,
       status: job.status,
       priority: job.priority,
       dueDate: toIsoDate(job.dueDate),
@@ -569,6 +583,9 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
           "name",
           "customerMembershipId",
           "category",
+          "primaryProcess",
+          "primaryResource",
+          "primaryMaterial",
           "status",
           "priority",
           "dueDate",
@@ -582,6 +599,9 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
           ${input.name},
           ${requesterMembership.membershipId},
           ${input.category},
+          ${input.primaryProcess},
+          ${input.primaryResource},
+          ${input.primaryMaterial},
           ${input.status},
           ${input.priority},
           ${dueDate},
@@ -627,6 +647,9 @@ export async function createJobForUser(userId: string, input: CreateJobInput): P
       name: input.name,
       customer: requesterMembership.displayName,
       category: input.category,
+      primaryProcess: input.primaryProcess,
+      primaryResource: input.primaryResource,
+      primaryMaterial: input.primaryMaterial,
       status: input.status,
       priority: input.priority,
       dueDate: toIsoDate(dueDate),
