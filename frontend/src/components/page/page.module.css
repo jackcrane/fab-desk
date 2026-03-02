@@ -104,6 +104,7 @@
 
 .innerContent {
   padding: 16px;
+  flex: 1;
 }
 
 .loadingState {

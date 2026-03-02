@@ -13,6 +13,23 @@ import {
   updateShopBasicSettingsInputSchema,
 } from './shops';
 import {
+  createShopProcessMaterialForUser,
+  createShopProcessMaterialInputSchema,
+  createShopProcessForUser,
+  createShopProcessInputSchema,
+  createShopProcessResourceForUser,
+  createShopProcessResourceInputSchema,
+  listShopProcessCatalogForUser,
+  listShopProcessCatalogInputSchema,
+  ShopProcessEditForbiddenError,
+  ShopProcessMaterialNameAlreadyExistsError,
+  ShopProcessNotFoundForUserError,
+  ShopProcessNameAlreadyExistsError,
+  ShopProcessResourceNameAlreadyExistsError,
+  ShopNotFoundForUserError as ProcessCatalogShopNotFoundForUserError,
+  ShopProcessCatalogSchemaNotReadyError,
+} from './shop-processes';
+import {
   createJobUploadTargetsForUser,
   createJobUploadTargetsInputSchema,
   createJobForUser,
@@ -134,6 +151,120 @@ const updateAccessSettings = protectedProcedure
     }
   });
 
+const listProcessCatalog = protectedProcedure
+  .input(listShopProcessCatalogInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await listShopProcessCatalogForUser(context.userId, input.shopId);
+    } catch (error) {
+      if (error instanceof ProcessCatalogShopNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessCatalogSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
+const createProcess = protectedProcedure
+  .input(createShopProcessInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await createShopProcessForUser(context.userId, input);
+    } catch (error) {
+      if (error instanceof ProcessCatalogShopNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessEditForbiddenError) {
+        throw new ORPCError('FORBIDDEN', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessNameAlreadyExistsError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessCatalogSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
+const createResource = protectedProcedure
+  .input(createShopProcessResourceInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await createShopProcessResourceForUser(context.userId, input);
+    } catch (error) {
+      if (error instanceof ProcessCatalogShopNotFoundForUserError || error instanceof ShopProcessNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessEditForbiddenError) {
+        throw new ORPCError('FORBIDDEN', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessResourceNameAlreadyExistsError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessCatalogSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
+const createMaterial = protectedProcedure
+  .input(createShopProcessMaterialInputSchema)
+  .handler(async ({ context, input }) => {
+    try {
+      return await createShopProcessMaterialForUser(context.userId, input);
+    } catch (error) {
+      if (error instanceof ProcessCatalogShopNotFoundForUserError || error instanceof ShopProcessNotFoundForUserError) {
+        throw new ORPCError('NOT_FOUND', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessEditForbiddenError) {
+        throw new ORPCError('FORBIDDEN', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessMaterialNameAlreadyExistsError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+      if (error instanceof ShopProcessCatalogSchemaNotReadyError) {
+        throw new ORPCError('BAD_REQUEST', {
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
+  });
+
 const listByShop = protectedProcedure
   .input(listShopJobsInputSchema)
   .handler(async ({ context, input }) => {
@@ -229,6 +360,10 @@ export const router = {
     create,
     updateBasicSettings,
     updateAccessSettings,
+    listProcessCatalog,
+    createProcess,
+    createResource,
+    createMaterial,
   },
   job: {
     listByShop,

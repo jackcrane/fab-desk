@@ -30,15 +30,18 @@ export function Table({
   onClickRow,
   rowKey = (row, index) => row?.id ?? index,
   emptyMessage = "No rows to display.",
+  style = {},
 }) {
   const clickableRows = typeof onClickRow === "function";
 
   return (
-    <table className={styles.table}>
+    <table className={styles.table} style={style}>
       <thead className="jcui_chamfer">
         <tr className="jcui_hatch">
           {columns.map((column, index) => (
-            <th key={column.key ?? column.header ?? index}>{column.header ?? ""}</th>
+            <th key={column.key ?? column.header ?? index}>
+              {column.header ?? ""}
+            </th>
           ))}
         </tr>
       </thead>
@@ -81,8 +84,12 @@ export function Table({
               {columns.map((column, columnIndex) => (
                 <td
                   key={column.key ?? column.header ?? columnIndex}
-                  onClick={column.stopRowClick ? onStopRowNavigation : undefined}
-                  onPointerDown={column.stopRowClick ? onStopRowNavigation : undefined}
+                  onClick={
+                    column.stopRowClick ? onStopRowNavigation : undefined
+                  }
+                  onPointerDown={
+                    column.stopRowClick ? onStopRowNavigation : undefined
+                  }
                 >
                   {renderCellValue(row, column)}
                 </td>

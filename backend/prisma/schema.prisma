@@ -111,6 +111,7 @@ model Shop {
   createdBy             User         @relation("ShopCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   memberships           Membership[]
   jobs                  Job[]
+  processes             ShopProcess[]
 
   @@index([createdById])
 }
@@ -170,6 +171,53 @@ model JobPart {
 
   @@unique([jobId, code])
   @@index([jobId])
+}
+
+model ShopProcess {
+  id          String            @id @default(cuid())
+  shopId      String
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  resources   ProcessResource[]
+  materials   ProcessMaterial[]
+
+  @@index([shopId])
+  @@unique([shopId, name])
+}
+
+model ProcessResource {
+  id          String      @id @default(cuid())
+  processId   String
+  process     ShopProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  unit        String
+  costPerUnit Float       @default(0)
+  flatCost    Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([processId])
+  @@unique([processId, name])
+}
+
+model ProcessMaterial {
+  id          String      @id @default(cuid())
+  processId   String
+  process     ShopProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  unit        String
+  costPerUnit Float       @default(0)
+  flatCost    Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([processId])
+  @@unique([processId, name])
 }
 
 enum MembershipRole {
